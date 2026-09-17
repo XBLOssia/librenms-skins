@@ -83,10 +83,48 @@
       rgba(0, 0, 0, .55) 1.4px 2.6px,
       transparent 2.7px);
 
-  --tn-font-stack: "Saira Condensed", "Oswald", "Roboto Condensed",
-                   "DIN Alternate", "Arial Narrow", system-ui, sans-serif;
-  --tn-mono-stack: "JetBrains Mono", "Consolas", "SF Mono", ui-monospace, monospace;
+  /* Typography.
+     --tn-font-chrome  condensed caps: navbar, panel headers, table headers,
+                       buttons, tabs. The "stencilled on the hull" voice.
+     --tn-font-data    monospace: device names, table cells, labels, badges,
+                       code. The "CRT terminal readout" voice.
+     Both fall back through widely-installed faces, so the skin needs no
+     webfont to work. See FONTS.md to self-host a real one. */
+  --tn-font-chrome: "Saira Condensed", "Oswald", "Roboto Condensed",
+                    "DIN Alternate", "Arial Narrow", system-ui, sans-serif;
+  --tn-font-data:   "JetBrains Mono", "IBM Plex Mono", "DejaVu Sans Mono",
+                    "Consolas", "SF Mono", "Menlo", ui-monospace, monospace;
+
+  /* Legacy aliases — earlier revisions of this file used these names. */
+  --tn-font-stack: var(--tn-font-chrome);
+  --tn-mono-stack: var(--tn-font-data);
 }
+
+/* -----------------------------------------------------------------------------
+ * 1b. SELF-HOSTED WEBFONT (optional)
+ *
+ * The stacks above are system-only and work out of the box. For the real CRT
+ * look, self-host a face rather than calling out to Google Fonts — a NOC box
+ * is often air-gapped, and an external font request is egress you may not want.
+ *
+ * Font files placed in html/css/custom/ ARE served: LibreNMS's rewrite rule is
+ * guarded by `RewriteCond %{REQUEST_FILENAME} !-f`, so existing files bypass
+ * it. That directory is gitignored upstream, so they survive updates too.
+ *
+ * Drop the .woff2 files next to this stylesheet, then uncomment:
+ *
+ * @font-face {
+ *   font-family: "Terran Data";
+ *   src: url("JetBrainsMono-Regular.woff2") format("woff2");
+ *   font-weight: 400; font-display: swap;
+ * }
+ * @font-face {
+ *   font-family: "Terran Data";
+ *   src: url("JetBrainsMono-Bold.woff2") format("woff2");
+ *   font-weight: 700; font-display: swap;
+ * }
+ * :root { --tn-font-data: "Terran Data", ui-monospace, monospace; }
+ * -------------------------------------------------------------------------- */
 
 /* -----------------------------------------------------------------------------
  * 2. HULL — page background
@@ -155,7 +193,7 @@ html.dark .navbar-default::before {
 
 html.dark .navbar-default .navbar-brand {
   color: var(--tn-hazard);
-  font-family: var(--tn-font-stack);
+  font-family: var(--tn-font-chrome);
   font-weight: 700;
   letter-spacing: .1em;
   text-transform: uppercase;
@@ -164,7 +202,7 @@ html.dark .navbar-default .navbar-brand {
 
 html.dark .navbar-default .navbar-nav > li > a {
   color: var(--tn-text-dim);
-  font-family: var(--tn-font-stack);
+  font-family: var(--tn-font-chrome);
   letter-spacing: .06em;
   text-transform: uppercase;
   border-left: 1px solid rgba(255, 255, 255, .04);
@@ -200,7 +238,7 @@ html.dark .dropdown-menu {
 
 html.dark .dropdown-menu > li > a {
   color: var(--tn-text-dim);
-  font-family: var(--tn-font-stack);
+  font-family: var(--tn-font-chrome);
   letter-spacing: .04em;
   padding: 5px 16px;
   border-left: 2px solid transparent;
@@ -216,7 +254,7 @@ html.dark .dropdown-menu > li > a:focus {
 html.dark .dropdown-menu .divider { background-color: var(--tn-edge); }
 html.dark .dropdown-header {
   color: var(--tn-hazard);
-  font-family: var(--tn-font-stack);
+  font-family: var(--tn-font-chrome);
   text-transform: uppercase;
   letter-spacing: .1em;
   font-size: 11px;
@@ -241,7 +279,7 @@ html.dark .panel > .panel-heading {
   border-bottom: 1px solid #000;
   border-radius: 0;
   color: var(--tn-text-bright);
-  font-family: var(--tn-font-stack);
+  font-family: var(--tn-font-chrome);
   font-weight: 600;
   letter-spacing: .09em;
   text-transform: uppercase;
@@ -293,7 +331,7 @@ html.dark .panel-footer {
 html.dark .widget-header {
   background-image: linear-gradient(180deg, #2c343a 0%, #212830 100%);
   color: var(--tn-text-bright);
-  font-family: var(--tn-font-stack);
+  font-family: var(--tn-font-chrome);
   text-transform: uppercase;
   letter-spacing: .08em;
 }
@@ -310,15 +348,25 @@ html.dark .table > thead > tr > th {
   color: var(--tn-text);
 }
 
+/* Column headers stay on the condensed "stencilled" face. */
 html.dark .table > thead > tr > th {
   background-color: #1a2024;
   border-bottom: 2px solid var(--tn-edge);
   color: var(--tn-hazard);
-  font-family: var(--tn-font-stack);
+  font-family: var(--tn-font-chrome);
   font-weight: 600;
   letter-spacing: .08em;
   text-transform: uppercase;
   font-size: 12px;
+}
+
+/* Body cells are terminal readout: monospace, with tabular figures so that
+   uptimes, counters and port numbers align into columns down the table. */
+html.dark .table > tbody > tr > td {
+  font-family: var(--tn-font-data);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
 html.dark .table-striped > tbody > tr:nth-of-type(odd)  { background-color: #1a1f23; }
@@ -352,7 +400,7 @@ html.dark .bootgrid-table td   { color: var(--tn-text); }
  * -------------------------------------------------------------------------- */
 html.dark .btn {
   border-radius: var(--tn-radius);
-  font-family: var(--tn-font-stack);
+  font-family: var(--tn-font-chrome);
   letter-spacing: .07em;
   text-transform: uppercase;
   border-width: 1px;
@@ -444,7 +492,7 @@ html.dark .input-group-addon {
 html.dark .alert {
   border-radius: var(--tn-radius);
   border-width: 1px 1px 1px 4px;
-  font-family: var(--tn-font-stack);
+  font-family: var(--tn-font-chrome);
   letter-spacing: .03em;
   box-shadow: var(--tn-bevel);
 }
@@ -470,13 +518,16 @@ html.dark .alert-info {
   color: #a3cfe8;
 }
 
+/* Status bugs read as stencilled terminal output: monospace, tight, caps. */
 html.dark .label,
 html.dark .badge {
   border-radius: var(--tn-radius);
-  font-family: var(--tn-font-stack);
-  font-weight: 600;
-  letter-spacing: .06em;
+  font-family: var(--tn-font-data);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
   text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
   box-shadow: var(--tn-bevel);
 }
 
@@ -502,10 +553,20 @@ html.dark .badge-navbar-user.badge-danger {
   html.dark .badge-navbar-user.badge-danger { animation: none; }
 }
 
-/* Device state links.
+/* Device state links — hostnames are machine identifiers, so they get the
+   terminal face. Letter-spacing is eased off because monospace is already wide.
    [!] .device-link-down ships `tw:dark:text-red-500!` from app.css. */
-html.dark .device-link-up       { color: var(--tn-green)    !important; }
-html.dark .device-link-down     { color: var(--tn-led-red)  !important; }
+html.dark .device-link-up,
+html.dark .device-link-down,
+html.dark .device-link-disabled {
+  font-family: var(--tn-font-data);
+  font-size: 12.5px;
+  letter-spacing: -.01em;
+}
+
+html.dark .device-link-up       { color: var(--tn-green)     !important; }
+html.dark .device-link-down     { color: var(--tn-led-red)   !important;
+                                  text-shadow: 0 0 9px rgba(255, 74, 61, .45); }
 html.dark .device-link-disabled { color: var(--tn-text-mute) !important; }
 
 /* -----------------------------------------------------------------------------
@@ -557,7 +618,7 @@ html.dark code {
   border: 1px solid #000;
   border-radius: var(--tn-radius);
   color: var(--tn-green);
-  font-family: var(--tn-mono-stack);
+  font-family: var(--tn-font-data);
   box-shadow: var(--tn-recess);
 }
 

@@ -61,6 +61,18 @@ The whole skin is driven by the token block at the top of
 [`skins/terran/terran.css`](skins/terran/terran.css). Change the variables in
 `:root` and nothing else — every rule below reads from them.
 
+### Typography
+
+Terran uses two voices: `--tn-font-chrome` (condensed caps) for the frame —
+navbar, panel headers, table headers, buttons — and `--tn-font-data`
+(monospace) for the readouts — device hostnames, table body cells, status
+labels and badges. Body cells also get tabular figures so uptimes and counters
+align down the column.
+
+It works with system fonts and no setup. To self-host a real webfont — which
+does work, and survives updates — see
+[`skins/terran/FONTS.md`](skins/terran/FONTS.md).
+
 ---
 
 ## Why these are "skins" and not themes
