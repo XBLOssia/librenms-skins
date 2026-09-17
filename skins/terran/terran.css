@@ -1,0 +1,576 @@
+/* =============================================================================
+ * TERRAN — a LibreNMS skin
+ * -----------------------------------------------------------------------------
+ * Riveted gunmetal plating, hazard striping, red indicator LEDs and green
+ * terminal readouts. Inspired by the Terran Dominion command console; all
+ * artwork here is original CSS (gradients, shadows, generated geometry) —
+ * no Blizzard assets are used or redistributed.
+ *
+ * REQUIREMENTS
+ *   Set your site style to "dark" first. This skin is an *overlay* on the
+ *   stock dark theme (html/css/tw_dark.css), not a replacement for it.
+ *     Preferences -> Theme -> Dark
+ *
+ * INSTALL
+ *   cp terran.css /opt/librenms/html/css/custom/
+ *   lnms config:set webui.custom_css '["css/custom/terran.css"]'
+ *
+ * WHY EVERY RULE IS PREFIXED `html.dark`
+ *   tw_dark.css styles the dark theme with `.dark .thing` (specificity 0,2,0).
+ *   A custom_css file loads after it, but source order only breaks ties at
+ *   EQUAL specificity — so bare `.thing` (0,1,0) silently loses. `html.dark`
+ *   yields (0,2,1), which beats it without reaching for !important.
+ *   Where !important IS used below, it is always marked with a [!] note
+ *   explaining which upstream rule forced it. See docs/FINDINGS.md.
+ *
+ * Verified against LibreNMS master @ 63e0394 (2026-09-17).
+ * ============================================================================= */
+
+/* -----------------------------------------------------------------------------
+ * 1. TOKENS
+ * The entire skin is driven by the variables below. Retheming means editing
+ * this block and nothing else. This is precisely the affordance LibreNMS core
+ * does not yet have — see docs/FINDINGS.md.
+ * -------------------------------------------------------------------------- */
+:root {
+  /* Hull & plating */
+  --tn-void:          #0b0e10;   /* deepest background, behind everything  */
+  --tn-hull:          #13171a;   /* page background                        */
+  --tn-plate:         #1c2226;   /* panel body                             */
+  --tn-plate-raised:  #252c32;   /* panel header, raised surfaces          */
+  --tn-plate-hi:      #2f383f;   /* hover / active surfaces                */
+  --tn-edge:          #39444c;   /* plate seams and borders                */
+  --tn-edge-lit:      #4d5b65;   /* top bevel highlight                    */
+  --tn-rivet:         #55646f;   /* rivet head                             */
+
+  /* Text */
+  --tn-text:          #c6ced4;
+  --tn-text-dim:      #8b979f;
+  --tn-text-mute:     #64707a;
+  --tn-text-bright:   #eef3f6;
+
+  /* Hazard striping — the yellow/black warning chevrons */
+  --tn-hazard:        #e0aa1e;
+  --tn-hazard-deep:   #7a5c0e;
+  --tn-hazard-dark:   #15100a;
+
+  /* Status: red indicator LEDs, green terminal phosphor */
+  --tn-led-red:       #ff4a3d;
+  --tn-red:           #cf3a2f;
+  --tn-red-deep:      #4a1512;
+  --tn-green:         #46c96b;
+  --tn-green-deep:    #11381f;
+  --tn-amber:         #e0aa1e;
+  --tn-amber-deep:    #3d2f08;
+  --tn-console:       #5fa8d3;   /* console blue, used for links           */
+  --tn-console-deep:  #14283a;
+
+  /* Geometry */
+  --tn-radius:        2px;       /* Terran hardware is not rounded         */
+  --tn-seam:          1px solid var(--tn-edge);
+  --tn-bevel:         inset 0 1px 0 rgba(255, 255, 255, .06),
+                      inset 0 -1px 0 rgba(0, 0, 0, .5);
+  --tn-recess:        inset 0 2px 5px rgba(0, 0, 0, .55);
+
+  /* Reusable generated textures */
+  --tn-hazard-stripes: repeating-linear-gradient(
+      -45deg,
+      var(--tn-hazard)      0px, var(--tn-hazard)      9px,
+      var(--tn-hazard-dark) 9px, var(--tn-hazard-dark) 18px);
+  --tn-rivet-dot: radial-gradient(
+      circle at center,
+      var(--tn-rivet) 0 1.4px,
+      rgba(0, 0, 0, .55) 1.4px 2.6px,
+      transparent 2.7px);
+
+  --tn-font-stack: "Saira Condensed", "Oswald", "Roboto Condensed",
+                   "DIN Alternate", "Arial Narrow", system-ui, sans-serif;
+  --tn-mono-stack: "JetBrains Mono", "Consolas", "SF Mono", ui-monospace, monospace;
+}
+
+/* -----------------------------------------------------------------------------
+ * 2. HULL — page background
+ * -------------------------------------------------------------------------- */
+html.dark,
+html.dark body {
+  background-color: var(--tn-hull);
+  color: var(--tn-text);
+}
+
+/* Faint diagonal plating seams across the page, so empty space still reads
+   as the inside of a battlecruiser rather than a blank div. */
+html.dark body {
+  background-image:
+    repeating-linear-gradient(
+      -45deg,
+      transparent 0 62px,
+      rgba(255, 255, 255, .012) 62px 63px),
+    linear-gradient(180deg, var(--tn-void) 0%, var(--tn-hull) 420px);
+  background-attachment: fixed;
+}
+
+html.dark a            { color: var(--tn-console); }
+html.dark a:hover,
+html.dark a:focus      { color: #8fcaea; text-decoration: none; }
+
+html.dark hr           { border-top-color: var(--tn-edge); }
+
+/* -----------------------------------------------------------------------------
+ * 3. COMMAND BAR — the top navbar
+ * tw_dark.css carries 31 `.dark .navbar-default*` rules; each is answered here.
+ * -------------------------------------------------------------------------- */
+html.dark .navbar-default {
+  background-color: var(--tn-plate-raised);
+  background-image: linear-gradient(180deg, #2b343b 0%, #1e252a 100%);
+  border: 0;
+  border-bottom: 1px solid #000;
+  box-shadow: 0 2px 0 0 rgba(0, 0, 0, .6), 0 6px 14px rgba(0, 0, 0, .45);
+  position: relative;
+}
+
+/* Hazard stripe running the full width beneath the command bar. This is the
+   single most recognisable Terran motif and costs one pseudo-element. */
+html.dark .navbar-default::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -4px;
+  height: 3px;
+  background: var(--tn-hazard-stripes);
+  opacity: .85;
+  pointer-events: none;
+}
+
+/* Rivet row along the top edge of the command bar. */
+html.dark .navbar-default::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: 4px;
+  height: 6px;
+  background-image: var(--tn-rivet-dot);
+  background-size: 34px 6px;
+  background-repeat: repeat-x;
+  opacity: .5;
+  pointer-events: none;
+}
+
+html.dark .navbar-default .navbar-brand {
+  color: var(--tn-hazard);
+  font-family: var(--tn-font-stack);
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(224, 170, 30, .35);
+}
+
+html.dark .navbar-default .navbar-nav > li > a {
+  color: var(--tn-text-dim);
+  font-family: var(--tn-font-stack);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  border-left: 1px solid rgba(255, 255, 255, .04);
+  transition: background-color .12s linear, color .12s linear;
+}
+
+html.dark .navbar-default .navbar-nav > li > a:hover,
+html.dark .navbar-default .navbar-nav > li > a:focus,
+html.dark .navbar-default .navbar-nav > .open > a,
+html.dark .navbar-default .navbar-nav > .open > a:hover,
+html.dark .navbar-default .navbar-nav > .open > a:focus {
+  background-color: var(--tn-plate-hi);
+  color: var(--tn-hazard);
+  box-shadow: inset 0 -2px 0 0 var(--tn-hazard);
+}
+
+html.dark .fa-nav-icons { color: var(--tn-text-mute); }
+html.dark .navbar-nav > li > a:hover .fa-nav-icons,
+html.dark .navbar-nav > .open > a .fa-nav-icons { color: var(--tn-hazard); }
+html.dark .icon-theme    { color: var(--tn-text-dim); }
+
+/* Dropdown menus — recessed console panels */
+html.dark .navbar-default .dropdown-menu,
+html.dark .dropdown-menu {
+  background-color: var(--tn-plate);
+  background-image: linear-gradient(180deg, #232a30 0%, #191f23 100%);
+  border: 1px solid #000;
+  border-top: 2px solid var(--tn-hazard);
+  border-radius: 0 0 var(--tn-radius) var(--tn-radius);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .7);
+  padding: 2px 0;
+}
+
+html.dark .dropdown-menu > li > a {
+  color: var(--tn-text-dim);
+  font-family: var(--tn-font-stack);
+  letter-spacing: .04em;
+  padding: 5px 16px;
+  border-left: 2px solid transparent;
+}
+
+html.dark .dropdown-menu > li > a:hover,
+html.dark .dropdown-menu > li > a:focus {
+  background-color: var(--tn-plate-hi);
+  color: var(--tn-text-bright);
+  border-left-color: var(--tn-hazard);
+}
+
+html.dark .dropdown-menu .divider { background-color: var(--tn-edge); }
+html.dark .dropdown-header {
+  color: var(--tn-hazard);
+  font-family: var(--tn-font-stack);
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  font-size: 11px;
+}
+
+/* -----------------------------------------------------------------------------
+ * 4. PLATING — panels
+ * tw_dark.css carries 24 `.dark .panel-heading*` rules.
+ * -------------------------------------------------------------------------- */
+html.dark .panel,
+html.dark .panel-default {
+  background-color: var(--tn-plate);
+  border: 1px solid #000;
+  border-radius: var(--tn-radius);
+  box-shadow: var(--tn-bevel), 0 3px 10px rgba(0, 0, 0, .4);
+}
+
+html.dark .panel-default > .panel-heading,
+html.dark .panel > .panel-heading {
+  background-color: var(--tn-plate-raised);
+  background-image: linear-gradient(180deg, #2c343a 0%, #212830 100%);
+  border-bottom: 1px solid #000;
+  border-radius: 0;
+  color: var(--tn-text-bright);
+  font-family: var(--tn-font-stack);
+  font-weight: 600;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  position: relative;
+  padding-left: 14px;
+}
+
+/* Yellow status bar on the leading edge of every panel header. */
+html.dark .panel-default > .panel-heading::before,
+html.dark .panel > .panel-heading::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: var(--tn-hazard);
+  box-shadow: 0 0 8px rgba(224, 170, 30, .5);
+}
+
+/* Rivets in the two top corners of the header. */
+html.dark .panel-default > .panel-heading::after,
+html.dark .panel > .panel-heading::after {
+  content: "";
+  position: absolute;
+  left: 10px; right: 8px; top: 5px;
+  height: 5px;
+  background-image: var(--tn-rivet-dot);
+  background-size: 100% 5px;
+  background-position: left center, right center;
+  background-repeat: no-repeat;
+  opacity: .0; /* off by default; enable for heavier ornamentation */
+}
+
+html.dark .panel-title,
+html.dark .panel-heading .panel-title a,
+html.dark .panel-default > .panel-heading .icon-theme,
+html.dark .panel-default > .panel-heading a:link,
+html.dark .panel-default > .panel-heading a:visited {
+  color: var(--tn-text-bright);
+}
+
+html.dark .panel-body   { background-color: var(--tn-plate); color: var(--tn-text); }
+html.dark .panel-footer {
+  background-color: #181e22;
+  border-top: 1px solid #000;
+  color: var(--tn-text-dim);
+}
+
+/* Dashboard widget headers (class added upstream in PR #20294). */
+html.dark .widget-header {
+  background-image: linear-gradient(180deg, #2c343a 0%, #212830 100%);
+  color: var(--tn-text-bright);
+  font-family: var(--tn-font-stack);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+/* -----------------------------------------------------------------------------
+ * 5. READOUTS — tables
+ * -------------------------------------------------------------------------- */
+html.dark .table,
+html.dark .table > tbody > tr > td,
+html.dark .table > tbody > tr > th,
+html.dark .table > thead > tr > td,
+html.dark .table > thead > tr > th {
+  border-color: rgba(255, 255, 255, .055);
+  color: var(--tn-text);
+}
+
+html.dark .table > thead > tr > th {
+  background-color: #1a2024;
+  border-bottom: 2px solid var(--tn-edge);
+  color: var(--tn-hazard);
+  font-family: var(--tn-font-stack);
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+html.dark .table-striped > tbody > tr:nth-of-type(odd)  { background-color: #1a1f23; }
+html.dark .table-striped > tbody > tr:nth-of-type(even) { background-color: #171b1f; }
+
+html.dark .table-hover > tbody > tr:hover,
+html.dark .table-hover > tbody > tr:hover > td {
+  background-color: #232b31;
+  box-shadow: inset 3px 0 0 0 var(--tn-hazard);
+}
+
+/* bootgrid — used on 42 pages */
+html.dark .bootgrid-header,
+html.dark .bootgrid-footer {
+  background-color: var(--tn-plate-raised);
+  border-color: #000;
+  color: var(--tn-text-dim);
+}
+html.dark .bootgrid-table th   { color: var(--tn-hazard); }
+html.dark .bootgrid-table td   { color: var(--tn-text); }
+
+/* -----------------------------------------------------------------------------
+ * 6. CONTROLS — buttons
+ *
+ * [!] The .lnms-btn-* component classes in resources/css/app.css are built with
+ *     `@apply ... tw:text-white!` — the `!` compiles to `color: #fff !important`
+ *     on an unlayered rule. There is no specificity that beats an !important
+ *     declaration, so a skin is FORCED to answer with !important of its own.
+ *     This is not a style choice; it is the only available mechanism.
+ *     Same applies to .device-link-down / .device-link-disabled below.
+ * -------------------------------------------------------------------------- */
+html.dark .btn {
+  border-radius: var(--tn-radius);
+  font-family: var(--tn-font-stack);
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  border-width: 1px;
+  box-shadow: var(--tn-bevel);
+  transition: filter .12s linear;
+}
+html.dark .btn:hover { filter: brightness(1.18); }
+html.dark .btn:active { box-shadow: var(--tn-recess); }
+
+html.dark .btn-default,
+html.dark .lnms-btn-default {
+  background-color: var(--tn-plate-raised) !important;   /* [!] beats tw:dark:bg-dark-gray-400 */
+  background-image: linear-gradient(180deg, #2f373e 0%, #232a2f 100%) !important;
+  border-color: #000 !important;
+  color: var(--tn-text) !important;                      /* [!] beats tw:dark:text-dark-white-100! */
+}
+
+html.dark .btn-primary,
+html.dark .lnms-btn-primary {
+  background-color: #2a5f80 !important;                  /* [!] beats tw:bg-[#337ab7] */
+  background-image: linear-gradient(180deg, #33718f 0%, #22506d 100%) !important;
+  border-color: #16394f !important;
+  color: var(--tn-text-bright) !important;               /* [!] beats tw:text-white! */
+}
+
+html.dark .btn-success,
+html.dark .lnms-btn-success {
+  background-color: #2f7a45 !important;                  /* [!] beats tw:bg-[#5cb85c] */
+  background-image: linear-gradient(180deg, #38914f 0%, #245f35 100%) !important;
+  border-color: #174a28 !important;
+  color: var(--tn-text-bright) !important;
+}
+
+html.dark .btn-danger,
+html.dark .lnms-btn-danger {
+  background-color: var(--tn-red) !important;            /* [!] beats tw:bg-[#d9534f] */
+  background-image: linear-gradient(180deg, #d94438 0%, #a32a22 100%) !important;
+  border-color: #6d1811 !important;
+  color: #fff !important;
+  box-shadow: var(--tn-bevel), 0 0 10px rgba(255, 74, 61, .3) !important;
+}
+
+html.dark .btn-warning,
+html.dark .lnms-btn-warning {
+  background-color: #b5871a !important;                  /* [!] beats tw:bg-[#f0ad4e] */
+  background-image: linear-gradient(180deg, #d0a027 0%, #8f6a12 100%) !important;
+  border-color: #5c4409 !important;
+  color: var(--tn-hazard-dark) !important;
+}
+
+/* -----------------------------------------------------------------------------
+ * 7. INPUTS
+ * tw_dark.css carries 21 `.dark .form-control*` rules; inputs read as recessed
+ * slots milled into the plating.
+ * -------------------------------------------------------------------------- */
+html.dark .form-control,
+html.dark input[type="text"],
+html.dark input[type="password"],
+html.dark input[type="number"],
+html.dark input[type="search"],
+html.dark textarea,
+html.dark select {
+  background-color: #101518;
+  border: 1px solid #000;
+  border-top-color: #05080a;
+  border-radius: var(--tn-radius);
+  box-shadow: var(--tn-recess);
+  color: var(--tn-text);
+}
+
+html.dark .form-control:focus {
+  border-color: var(--tn-hazard);
+  box-shadow: var(--tn-recess), 0 0 0 1px rgba(224, 170, 30, .35),
+              0 0 10px rgba(224, 170, 30, .22);
+  outline: 0;
+}
+
+html.dark .form-control::placeholder { color: var(--tn-text-mute); }
+html.dark .input-group-addon {
+  background-color: var(--tn-plate-raised);
+  border-color: #000;
+  color: var(--tn-text-dim);
+}
+
+/* -----------------------------------------------------------------------------
+ * 8. STATUS — alerts, labels, badges
+ * Red = LED indicator, green = terminal phosphor, yellow = hazard.
+ * -------------------------------------------------------------------------- */
+html.dark .alert {
+  border-radius: var(--tn-radius);
+  border-width: 1px 1px 1px 4px;
+  font-family: var(--tn-font-stack);
+  letter-spacing: .03em;
+  box-shadow: var(--tn-bevel);
+}
+
+html.dark .alert-danger {
+  background-color: var(--tn-red-deep);
+  border-color: #000 #000 #000 var(--tn-led-red);
+  color: #ff9f97;
+}
+html.dark .alert-success {
+  background-color: var(--tn-green-deep);
+  border-color: #000 #000 #000 var(--tn-green);
+  color: #8fe4a8;
+}
+html.dark .alert-warning {
+  background-color: var(--tn-amber-deep);
+  border-color: #000 #000 #000 var(--tn-hazard);
+  color: #f0cf7c;
+}
+html.dark .alert-info {
+  background-color: var(--tn-console-deep);
+  border-color: #000 #000 #000 var(--tn-console);
+  color: #a3cfe8;
+}
+
+html.dark .label,
+html.dark .badge {
+  border-radius: var(--tn-radius);
+  font-family: var(--tn-font-stack);
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  box-shadow: var(--tn-bevel);
+}
+
+html.dark .label-danger,  html.dark .badge-danger  { background-color: var(--tn-red); }
+html.dark .label-success, html.dark .badge-success { background-color: #2f7a45; }
+html.dark .label-warning, html.dark .badge-warning { background-color: #b5871a; }
+html.dark .label-info,    html.dark .badge-info    { background-color: #2a5f80; }
+html.dark .label-default, html.dark .badge-default { background-color: var(--tn-plate-hi); }
+
+/* A live red LED for the notification counter in the command bar. */
+html.dark .badge-navbar-user.badge-danger {
+  background-color: var(--tn-led-red);
+  box-shadow: 0 0 8px rgba(255, 74, 61, .8);
+  animation: tn-led 2.4s ease-in-out infinite;
+}
+
+@keyframes tn-led {
+  0%, 100% { box-shadow: 0 0 6px  rgba(255, 74, 61, .55); }
+  50%      { box-shadow: 0 0 13px rgba(255, 74, 61, .95); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.dark .badge-navbar-user.badge-danger { animation: none; }
+}
+
+/* Device state links.
+   [!] .device-link-down ships `tw:dark:text-red-500!` from app.css. */
+html.dark .device-link-up       { color: var(--tn-green)    !important; }
+html.dark .device-link-down     { color: var(--tn-led-red)  !important; }
+html.dark .device-link-disabled { color: var(--tn-text-mute) !important; }
+
+/* -----------------------------------------------------------------------------
+ * 9. CHROME — progress bar, page menu, wells
+ * -------------------------------------------------------------------------- */
+html.dark .pace .pace-progress { background: var(--tn-hazard); }
+html.dark .pace .pace-progress-inner {
+  box-shadow: 0 0 10px var(--tn-hazard), 0 0 5px var(--tn-hazard);
+}
+html.dark .pace .pace-activity {
+  border-top-color: var(--tn-hazard);
+  border-left-color: var(--tn-hazard);
+}
+
+html.dark .pagemenu-selected {
+  background-color: var(--tn-plate-hi);
+  box-shadow: inset 0 -2px 0 0 var(--tn-hazard);
+}
+
+html.dark .well {
+  background-color: #101518;
+  border: 1px solid #000;
+  box-shadow: var(--tn-recess);
+}
+
+html.dark .nav-tabs > li > a { color: var(--tn-text-dim); border-radius: 0; }
+html.dark .nav-tabs > li.active > a,
+html.dark .nav-tabs > li.active > a:hover,
+html.dark .nav-tabs > li.active > a:focus {
+  background-color: var(--tn-plate);
+  border-color: #000;
+  border-top: 2px solid var(--tn-hazard);
+  color: var(--tn-text-bright);
+}
+
+html.dark .modal-content {
+  background-color: var(--tn-plate);
+  border: 1px solid #000;
+  border-top: 3px solid var(--tn-hazard);
+  border-radius: var(--tn-radius);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .8);
+}
+html.dark .modal-header,
+html.dark .modal-footer { border-color: var(--tn-edge); }
+
+html.dark pre,
+html.dark code {
+  background-color: #0d1215;
+  border: 1px solid #000;
+  border-radius: var(--tn-radius);
+  color: var(--tn-green);
+  font-family: var(--tn-mono-stack);
+  box-shadow: var(--tn-recess);
+}
+
+/* -----------------------------------------------------------------------------
+ * 10. GRAPHS
+ * RRDtool renders graphs server-side to PNG using colours from PHP, NOT CSS.
+ * Nothing in this file can change the ink inside a graph — see docs/FINDINGS.md.
+ * All we can do is seat the image in the plating.
+ * -------------------------------------------------------------------------- */
+html.dark .graph-image,
+html.dark img.graph-image {
+  background-color: #fff;       /* keeps RRD PNGs legible on dark plating */
+  border: 1px solid #000;
+  border-radius: var(--tn-radius);
+  box-shadow: var(--tn-bevel);
+}

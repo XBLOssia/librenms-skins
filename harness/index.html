@@ -1,0 +1,163 @@
+<!DOCTYPE HTML>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terran skin harness</title>
+
+<!-- Stylesheet order mirrors resources/views/layouts/librenmsv1.blade.php:41-49 -->
+<link href="css/fontawesome.min.css" rel="stylesheet">
+<link href="css/bootstrap.min.css" rel="stylesheet">
+<link href="css/styles.css" rel="stylesheet">
+<link href="css/tw_dark.css" rel="stylesheet">
+
+<!-- Hand-compiled equivalent of the .lnms-btn-* classes from resources/css/app.css.
+     The `@apply ... tw:text-white!` in source compiles to `!important` on an
+     UNLAYERED rule. Reproduced faithfully so the specificity fight is real. -->
+<style>
+.lnms-btn { display:inline-flex; align-items:center; gap:.25rem; border-radius:.5rem;
+            padding:.25rem .5rem; font-weight:400; text-decoration:none; }
+.lnms-btn-default { background-color:#2e3338; color:#f9fafb !important;
+                    border:1px solid #4f565d; }
+.lnms-btn-primary { background-color:#337ab7; color:#fff !important; }
+.lnms-btn-success { background-color:#5cb85c; color:#fff !important; }
+.lnms-btn-danger  { background-color:#d9534f; color:#fff !important; }
+.lnms-btn-warning { background-color:#f0ad4e; color:#fff !important; }
+.device-link-up   { font-weight:700; color:#f9fafb; }
+.device-link-down { font-weight:700; color:#fb2c36 !important; }
+.device-link-disabled { font-weight:700; color:#6a7282 !important; }
+body { padding-top: 60px; }
+.harness-label { font: 11px/1.4 monospace; color:#7d8a93; text-transform:uppercase;
+                 letter-spacing:.1em; margin:26px 0 8px; border-bottom:1px dashed #333;
+                 padding-bottom:4px; }
+</style>
+
+<!-- THE SKIN — loaded last, exactly as webui.custom_css does -->
+<link href="../skins/terran/terran.css" rel="stylesheet">
+</head>
+<body>
+
+<nav class="navbar navbar-default navbar-fixed-top" role="navigation">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="#">LibreNMS</a>
+    </div>
+    <div class="collapse navbar-collapse">
+      <ul class="nav navbar-nav">
+        <li class="dropdown open">
+          <a href="#" class="dropdown-toggle"><i class="fa fa-home fa-fw fa-lg fa-nav-icons"></i> Overview <b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            <li class="dropdown-header">Dashboards</li>
+            <li><a href="#"><i class="fa fa-tachometer fa-fw fa-nav-icons"></i> Global Status</a></li>
+            <li><a href="#"><i class="fa fa-map fa-fw fa-nav-icons"></i> World Map</a></li>
+            <li class="divider"></li>
+            <li><a href="#"><i class="fa fa-lock fa-fw fa-nav-icons"></i> SSL Certificates</a></li>
+          </ul>
+        </li>
+        <li><a href="#"><i class="fa fa-server fa-fw fa-lg fa-nav-icons"></i> Devices</a></li>
+        <li><a href="#"><i class="fa fa-link fa-fw fa-lg fa-nav-icons"></i> Ports</a></li>
+        <li><a href="#"><i class="fa fa-heartbeat fa-fw fa-lg fa-nav-icons"></i> Health</a></li>
+        <li><a href="#"><i class="fa fa-cogs fa-fw fa-lg fa-nav-icons"></i> Settings</a></li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li><a href="#"><i class="fa fa-user fa-fw fa-lg fa-nav-icons"></i>
+          <span class="badge badge-navbar-user badge-danger count-notif">7</span></a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="container-fluid">
+
+  <div class="harness-label">panels / plating</div>
+  <div class="row">
+    <div class="col-md-6">
+      <div class="panel panel-default">
+        <div class="panel-heading"><span class="panel-title">Device Availability</span></div>
+        <div class="panel-body">
+          <p>Standard panel body text on plating. <a href="#">An inline link</a> for contrast.</p>
+          <div class="well">A recessed well, milled into the hull.</div>
+        </div>
+        <div class="panel-footer">panel-footer</div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="panel panel-default">
+        <div class="panel-heading"><span class="panel-title">Poller Status</span></div>
+        <div class="panel-body">
+          <pre>rrdtool fetch /opt/librenms/rrd/core.rrd AVERAGE
+  2026-09-17 16:20:00  4.2180e+08</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="harness-label">tables / readouts</div>
+  <div class="panel panel-default">
+    <div class="panel-heading"><span class="panel-title">Devices</span></div>
+    <table class="table table-striped table-hover">
+      <thead><tr><th>Hostname</th><th>OS</th><th>Uptime</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td><a href="#" class="device-link-up">core-sw-01.dominion.net</a></td>
+            <td>Cisco IOS</td><td>412d 6h</td><td><span class="label label-success">Up</span></td></tr>
+        <tr><td><a href="#" class="device-link-down">edge-rtr-04.dominion.net</a></td>
+            <td>JunOS</td><td>—</td><td><span class="label label-danger">Down</span></td></tr>
+        <tr><td><a href="#" class="device-link-up">dist-sw-11.dominion.net</a></td>
+            <td>Arista EOS</td><td>88d 2h</td><td><span class="label label-warning">Warn</span></td></tr>
+        <tr><td><a href="#" class="device-link-disabled">lab-sw-99.dominion.net</a></td>
+            <td>Linux</td><td>—</td><td><span class="label label-default">Disabled</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="harness-label">buttons — bootstrap .btn-* vs tailwind .lnms-btn-* (!important)</div>
+  <p>
+    <button class="btn btn-default">Default</button>
+    <button class="btn btn-primary">Primary</button>
+    <button class="btn btn-success">Success</button>
+    <button class="btn btn-danger">Danger</button>
+    <button class="btn btn-warning">Warning</button>
+  </p>
+  <p>
+    <a href="#" class="lnms-btn lnms-btn-default">lnms Default</a>
+    <a href="#" class="lnms-btn lnms-btn-primary">lnms Primary</a>
+    <a href="#" class="lnms-btn lnms-btn-success">lnms Success</a>
+    <a href="#" class="lnms-btn lnms-btn-danger">lnms Danger</a>
+    <a href="#" class="lnms-btn lnms-btn-warning">lnms Warning</a>
+  </p>
+
+  <div class="harness-label">alerts / status</div>
+  <div class="alert alert-danger">Device <strong>edge-rtr-04</strong> is down — ICMP unreachable.</div>
+  <div class="alert alert-warning">Sensor <strong>PSU-2 temp</strong> above threshold (71&deg;C).</div>
+  <div class="alert alert-success">Device <strong>core-sw-01</strong> recovered.</div>
+  <div class="alert alert-info">Discovery completed in 42.1s.</div>
+
+  <div class="harness-label">forms / inputs</div>
+  <div class="row"><div class="col-md-6">
+    <div class="form-group">
+      <input type="text" class="form-control" placeholder="Search devices...">
+    </div>
+    <div class="form-group">
+      <select class="form-control"><option>All device groups</option><option>Core</option></select>
+    </div>
+    <div class="form-group">
+      <textarea class="form-control" rows="2" placeholder="Notes"></textarea>
+    </div>
+  </div></div>
+
+  <div class="harness-label">tabs</div>
+  <ul class="nav nav-tabs">
+    <li class="active"><a href="#">Overview</a></li>
+    <li><a href="#">Graphs</a></li>
+    <li><a href="#">Ports</a></li>
+    <li><a href="#">Logs</a></li>
+  </ul>
+  <div class="panel panel-default" style="border-top:0">
+    <div class="panel-body">Tab content sits below.</div>
+  </div>
+
+  <div style="height:60px"></div>
+</div>
+
+</body>
+</html>
