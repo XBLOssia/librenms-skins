@@ -1,124 +1,94 @@
-# Fonts
+# Fonts — Terran
 
-Terran uses two typographic voices:
+**The fonts ship with the skin. There is nothing to install.**
 
-| Token | Role | Applied to |
-|---|---|---|
-| `--tn-font-chrome` | Condensed caps — "stencilled on the hull" | Navbar, panel headers, table **headers**, buttons, tabs, alerts |
-| `--tn-font-data` | Monospace — "CRT terminal readout" | Device hostnames, table **body cells**, labels, badges, `pre`/`code` |
+Copy the `terran/` directory and the typography works. No system fonts to
+chase, no Google Fonts request, nothing for the end user to do.
+
+---
+
+## The two voices
+
+| Token | Face | Role | Applied to |
+|---|---|---|---|
+| `--tn-font-chrome` | Saira Condensed 600/700 | Condensed caps — "stencilled on the hull" | Navbar, panel headers, table **headers**, buttons, tabs |
+| `--tn-font-data` | JetBrains Mono 400/700 | Monospace — "CRT terminal readout" | Device hostnames, table **body cells**, labels, badges, `pre`/`code` |
 
 Table body cells and status bugs also get `font-variant-numeric: tabular-nums`,
 so uptimes, counters and port numbers align into columns instead of drifting.
 
-Both tokens are plain CSS variables at the top of `terran.css`. Change them
-there and every rule follows.
+---
+
+## What ships
+
+```
+skins/terran/fonts/
+  SairaCondensed-SemiBold.woff2   17.6 KB
+  SairaCondensed-Bold.woff2       17.4 KB
+  JetBrainsMono-Regular.woff2     20.7 KB
+  JetBrainsMono-Bold.woff2        21.4 KB
+  OFL-SairaCondensed.txt
+  OFL-JetBrainsMono.txt
+```
+
+**~77 KB total.** These are the Latin unicode-range subsets that Google Fonts
+already serves — U+0000–00FF plus the punctuation the UI actually uses. The
+full faces would be several hundred KB each; nothing in LibreNMS's interface
+needs Devanagari or Cyrillic.
+
+Both faces are **SIL Open Font License 1.1**, which explicitly permits
+redistribution. The notices ship alongside them, as the licence requires.
+
+Regenerate reproducibly with `scripts/fetch-fonts.ps1`.
 
 ---
 
-## Option 1 — system fonts (default, zero setup)
+## Why bundled rather than `@import`
 
-Out of the box the skin uses fallback chains only:
+A Google Fonts `@import` is one line and would have worked on a laptop. It is
+the wrong call for a monitoring box:
 
-```css
---tn-font-chrome: "Saira Condensed", "Oswald", "Roboto Condensed",
-                  "DIN Alternate", "Arial Narrow", system-ui, sans-serif;
---tn-font-data:   "JetBrains Mono", "IBM Plex Mono", "DejaVu Sans Mono",
-                  "Consolas", "SF Mono", "Menlo", ui-monospace, monospace;
-```
+- A NOC is frequently air-gapped or egress-filtered. The skin would silently
+  degrade to fallbacks precisely where it is least convenient to debug.
+- It leaks a third-party request per operator per page load.
+- It makes page render depend on someone else's CDN — inside the tool you use
+  to find out whether the network is broken.
 
-Nothing to install and no network egress. The monospace chain is reliable —
-`Consolas` ships on Windows, `SF Mono`/`Menlo` on macOS, `DejaVu Sans Mono` on
-most Linux distributions (LibreNMS itself even bundles `DejaVuSans.ttf`).
-
-The condensed chain is less reliable. `Arial Narrow` is broadly present on
-Windows and macOS; on a bare Linux desktop you will likely fall through to
-`system-ui`, which is not condensed. If the headers look wrong, that is why —
-use option 2.
+Bundling is the same result with none of that.
 
 ---
 
-## Option 2 — self-hosted webfont (recommended)
+## Why it works from `html/css/custom/`
 
-**Font files placed in `html/css/custom/` are served correctly.** LibreNMS's
-rewrite rule is guarded by `RewriteCond %{REQUEST_FILENAME} !-f`, so a file that
-exists on disk bypasses the rewrite to `index.php` and is served directly. That
-directory is also gitignored upstream, so the fonts survive `./daily.sh`.
+Font files placed there are served, not swallowed by the router. LibreNMS's
+catch-all rewrite is guarded:
 
-1. Download the `.woff2` files. Suggested pairing:
-   - **Data:** [JetBrains Mono](https://www.jetbrains.com/lp/mono/) (OFL) — designed for
-     long reading at small sizes, which is what a device list is.
-   - **Chrome:** [Saira Condensed](https://fonts.google.com/specimen/Saira+Condensed) (OFL)
-     — the squared-off industrial condensed the skin is designed around.
-
-2. Drop them next to the stylesheet:
-
-```bash
-cp JetBrainsMono-Regular.woff2 JetBrainsMono-Bold.woff2 \
-   SairaCondensed-SemiBold.woff2 /opt/librenms/html/css/custom/
+```apache
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^(.*)$ index.php
 ```
 
-3. Uncomment the `@font-face` block in section **1b** of `terran.css` and
-   extend it for the chrome face:
+A file that exists on disk fails the `!-f` condition, so the rewrite never
+fires and the file is served directly. That directory is also gitignored
+upstream, so the fonts survive `./daily.sh` alongside the stylesheet.
 
-```css
-@font-face {
-  font-family: "Terran Data";
-  src: url("JetBrainsMono-Regular.woff2") format("woff2");
-  font-weight: 400; font-display: swap;
-}
-@font-face {
-  font-family: "Terran Data";
-  src: url("JetBrainsMono-Bold.woff2") format("woff2");
-  font-weight: 700; font-display: swap;
-}
-@font-face {
-  font-family: "Terran Chrome";
-  src: url("SairaCondensed-SemiBold.woff2") format("woff2");
-  font-weight: 600; font-display: swap;
-}
-:root {
-  --tn-font-data:   "Terran Data", ui-monospace, monospace;
-  --tn-font-chrome: "Terran Chrome", "Arial Narrow", system-ui, sans-serif;
-}
-```
-
-`font-display: swap` means text renders in the fallback immediately and
-upgrades when the font arrives — no invisible-text flash on a slow poller box.
-
-Paths in `url()` are relative to the stylesheet, so no `base_url` juggling.
+Paths in `url()` resolve relative to the **stylesheet**, not the page — so the
+skin directory can live anywhere under the webroot and the fonts still load.
 
 ---
 
-## Option 3 — Google Fonts `@import`
+## Changing the faces
 
-Works, and is one line:
+Everything is two variables at the top of `terran.css`. To swap a face, drop a
+`.woff2` in `fonts/`, point the matching `@font-face` at it, and you are done —
+no rule below section 1b mentions a font by name.
 
-```css
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
-```
-
-**Not recommended for a monitoring box.** It adds an external network
-dependency to a tool whose entire job is to keep working when the network is
-having a bad day — an air-gapped or egress-filtered NOC will simply render the
-fallback. It also leaks a request to a third party on every page load for every
-operator. Option 2 is the same result without either problem.
-
----
-
-## Going harder on the CRT look
-
-If you want full phosphor-terminal rather than clean monospace, swap
-`--tn-font-data` for something like
-[Share Tech Mono](https://fonts.google.com/specimen/Share+Tech+Mono) or
-[VT323](https://fonts.google.com/specimen/VT323).
-
-Be warned: both are considerably less legible at 12px, and a device list is
-something people stare at for eight hours. Consider scoping the novelty face to
-low-density chrome only, and leaving table cells on a workhorse mono:
+To go harder on the CRT look, [Share Tech Mono](https://fonts.google.com/specimen/Share+Tech+Mono)
+or [VT323](https://fonts.google.com/specimen/VT323) will do it. Both are
+considerably less legible at 12px, and a device list is something people stare
+at for eight hours — consider scoping the novelty face to chrome only and
+leaving table cells on a workhorse mono:
 
 ```css
-:root { --tn-font-data: "Share Tech Mono", ui-monospace, monospace; }
-html.dark .table > tbody > tr > td {
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-}
+:root { --tn-font-chrome: "Share Tech Mono", ui-monospace, monospace; }
 ```

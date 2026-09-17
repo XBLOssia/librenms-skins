@@ -90,10 +90,12 @@
                        code. The "CRT terminal readout" voice.
      Both fall back through widely-installed faces, so the skin needs no
      webfont to work. See FONTS.md to self-host a real one. */
-  --tn-font-chrome: "Saira Condensed", "Oswald", "Roboto Condensed",
-                    "DIN Alternate", "Arial Narrow", system-ui, sans-serif;
-  --tn-font-data:   "JetBrains Mono", "IBM Plex Mono", "DejaVu Sans Mono",
-                    "Consolas", "SF Mono", "Menlo", ui-monospace, monospace;
+  --tn-font-chrome: "Terran Chrome", "Saira Condensed", "Oswald",
+                    "Roboto Condensed", "DIN Alternate", "Arial Narrow",
+                    system-ui, sans-serif;
+  --tn-font-data:   "Terran Data", "JetBrains Mono", "IBM Plex Mono",
+                    "DejaVu Sans Mono", "Consolas", "SF Mono", "Menlo",
+                    ui-monospace, monospace;
 
   /* Legacy aliases — earlier revisions of this file used these names. */
   --tn-font-stack: var(--tn-font-chrome);
@@ -101,30 +103,44 @@
 }
 
 /* -----------------------------------------------------------------------------
- * 1b. SELF-HOSTED WEBFONT (optional)
+ * 1b. BUNDLED WEBFONTS
  *
- * The stacks above are system-only and work out of the box. For the real CRT
- * look, self-host a face rather than calling out to Google Fonts — a NOC box
- * is often air-gapped, and an external font request is egress you may not want.
+ * The fonts ship with the skin — copy the whole terran/ directory and they work.
+ * Nothing to install, and no request ever leaves the box: a NOC is often
+ * air-gapped, and calling out to Google Fonts would mean the skin silently
+ * degrades exactly where it is least convenient.
  *
- * Font files placed in html/css/custom/ ARE served: LibreNMS's rewrite rule is
- * guarded by `RewriteCond %{REQUEST_FILENAME} !-f`, so existing files bypass
- * it. That directory is gitignored upstream, so they survive updates too.
+ * These load correctly from html/css/custom/ because LibreNMS's rewrite to
+ * index.php is guarded by `RewriteCond %{REQUEST_FILENAME} !-f` — a file that
+ * exists on disk bypasses it. That directory is gitignored upstream, so the
+ * fonts survive ./daily.sh alongside this stylesheet.
  *
- * Drop the .woff2 files next to this stylesheet, then uncomment:
+ * Latin subsets only, ~77KB total. Both faces are SIL Open Font License 1.1;
+ * the notices are in fonts/. Regenerate with scripts/fetch-fonts.ps1.
  *
- * @font-face {
- *   font-family: "Terran Data";
- *   src: url("JetBrainsMono-Regular.woff2") format("woff2");
- *   font-weight: 400; font-display: swap;
- * }
- * @font-face {
- *   font-family: "Terran Data";
- *   src: url("JetBrainsMono-Bold.woff2") format("woff2");
- *   font-weight: 700; font-display: swap;
- * }
- * :root { --tn-font-data: "Terran Data", ui-monospace, monospace; }
+ * If the stylesheet is installed somewhere other than html/css/custom/, these
+ * relative paths still resolve — url() is relative to the CSS file, not the page.
  * -------------------------------------------------------------------------- */
+@font-face {
+  font-family: "Terran Chrome";
+  src: url("fonts/SairaCondensed-SemiBold.woff2") format("woff2");
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Terran Chrome";
+  src: url("fonts/SairaCondensed-Bold.woff2") format("woff2");
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Terran Data";
+  src: url("fonts/JetBrainsMono-Regular.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Terran Data";
+  src: url("fonts/JetBrainsMono-Bold.woff2") format("woff2");
+  font-weight: 700; font-style: normal; font-display: swap;
+}
 
 /* -----------------------------------------------------------------------------
  * 2. HULL — page background

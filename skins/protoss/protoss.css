@@ -103,41 +103,53 @@
                        The Khalai-inscription voice.
      --pr-font-data    futuristic but readable: hostnames, cells, labels.
      --pr-font-code    monospace, for code blocks only. */
-  --pr-font-chrome: "Cinzel", "Trajan Pro", "Optima", "Palatino Linotype",
-                    "Georgia", serif;
-  --pr-font-data:   "Rajdhani", "Exo 2", "Titillium Web", "Segoe UI",
-                    system-ui, sans-serif;
-  --pr-font-code:   "Space Mono", "JetBrains Mono", "Consolas",
+  --pr-font-chrome: "Protoss Chrome", "Cinzel", "Trajan Pro", "Optima",
+                    "Palatino Linotype", "Georgia", serif;
+  --pr-font-data:   "Protoss Data", "Rajdhani", "Exo 2", "Titillium Web",
+                    "Segoe UI", system-ui, sans-serif;
+  --pr-font-code:   "Protoss Code", "Space Mono", "JetBrains Mono", "Consolas",
                     ui-monospace, monospace;
 }
 
 /* -----------------------------------------------------------------------------
- * 1b. SELF-HOSTED WEBFONT (strongly recommended — see FONTS.md)
+ * 1b. BUNDLED WEBFONTS
  *
- * Font files in html/css/custom/ ARE served: LibreNMS's rewrite to index.php is
- * guarded by `RewriteCond %{REQUEST_FILENAME} !-f`, so existing files bypass it.
- * That directory is gitignored upstream, so fonts survive updates.
+ * The fonts ship with the skin — copy the whole protoss/ directory and they
+ * work. Nothing to install, and no request ever leaves the box.
  *
- * @font-face {
- *   font-family: "Protoss Chrome";
- *   src: url("Cinzel-SemiBold.woff2") format("woff2");
- *   font-weight: 600; font-display: swap;
- * }
- * @font-face {
- *   font-family: "Protoss Data";
- *   src: url("Rajdhani-Medium.woff2") format("woff2");
- *   font-weight: 500; font-display: swap;
- * }
- * @font-face {
- *   font-family: "Protoss Data";
- *   src: url("Rajdhani-Bold.woff2") format("woff2");
- *   font-weight: 700; font-display: swap;
- * }
- * :root {
- *   --pr-font-chrome: "Protoss Chrome", "Georgia", serif;
- *   --pr-font-data:   "Protoss Data", "Segoe UI", system-ui, sans-serif;
- * }
+ * This matters more here than it does for Terran. Protoss's character lives in
+ * the collision between carved ceremonial capitals and a clean futuristic sans;
+ * on fallbacks alone that becomes Georgia and Segoe UI, which is just a blue
+ * and gold repaint. Bundling is what makes the skin the skin.
+ *
+ * These load correctly from html/css/custom/ because LibreNMS's rewrite to
+ * index.php is guarded by `RewriteCond %{REQUEST_FILENAME} !-f` — a file that
+ * exists on disk bypasses it. That directory is gitignored upstream, so the
+ * fonts survive ./daily.sh alongside this stylesheet.
+ *
+ * Latin subsets only, ~61KB total. All three faces are SIL Open Font License
+ * 1.1; the notices are in fonts/. Regenerate with scripts/fetch-fonts.ps1.
  * -------------------------------------------------------------------------- */
+@font-face {
+  font-family: "Protoss Chrome";
+  src: url("fonts/Cinzel-SemiBold.woff2") format("woff2");
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Protoss Data";
+  src: url("fonts/Rajdhani-Medium.woff2") format("woff2");
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Protoss Data";
+  src: url("fonts/Rajdhani-Bold.woff2") format("woff2");
+  font-weight: 600 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Protoss Code";
+  src: url("fonts/SpaceMono-Regular.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
 
 /* -----------------------------------------------------------------------------
  * 2. THE VOID — page background

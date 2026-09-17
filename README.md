@@ -30,23 +30,28 @@ broken.
 
 1. Set your site style to dark — *Preferences → Theme → Dark*.
 
-2. Copy one skin into the update-safe custom CSS directory:
+2. Copy one skin directory into the update-safe custom CSS directory. Copy the
+   whole directory — the webfonts live inside it:
 
 ```bash
-cp skins/terran/terran.css /opt/librenms/html/css/custom/
+cp -r skins/terran /opt/librenms/html/css/custom/
 ```
 
 3. Register it:
 
 ```bash
-lnms config:set webui.custom_css '["css/custom/terran.css"]'
+lnms config:set webui.custom_css '["css/custom/terran/terran.css"]'
 ```
 
 4. Hard-refresh the browser.
 
-For Protoss, substitute `skins/protoss/protoss.css` and
-`css/custom/protoss.css`. Load **one skin at a time** — `webui.custom_css` is an
-array and listing two will cascade them into mush.
+For Protoss, substitute `skins/protoss` and `css/custom/protoss/protoss.css`.
+Load **one skin at a time** — `webui.custom_css` is an array and listing two
+will cascade them into mush.
+
+**Nothing else to install.** Each skin bundles its own webfonts (~61–77KB of
+Latin-subset woff2, all SIL Open Font License). No system fonts to chase, and
+no request ever leaves the box.
 
 > `webui.custom_css` is instance-wide. Every user on the instance gets the same
 > skin; LibreNMS has no per-user custom theme selection. See
@@ -80,9 +85,10 @@ align down the column.
 Protoss uses the same split, but louder: carved ceremonial capitals for the
 frame against a clean futuristic sans for the data.
 
-Terran works fine on system fonts. **Protoss really wants its webfonts** — its
-character lives in the typography, and both faces fall back to ordinary system
-fonts. Self-hosting works and survives updates:
+Both skins bundle their faces, so this works with no setup and no external
+requests — which matters on an air-gapped NOC box, where a Google Fonts
+`@import` would silently degrade exactly where it is least convenient to
+debug. Details, sizes and licensing:
 [`skins/terran/FONTS.md`](skins/terran/FONTS.md) ·
 [`skins/protoss/FONTS.md`](skins/protoss/FONTS.md).
 

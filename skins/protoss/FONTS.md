@@ -1,94 +1,114 @@
 # Fonts — Protoss
 
-**Read this one.** Terran degrades gracefully without webfonts. Protoss does
-not. Its character lives in the typography, and both intended faces are Google
-Fonts with no close system equivalent.
+**The fonts ship with the skin. There is nothing to install.**
 
-| Token | Voice | Applied to |
-|---|---|---|
-| `--pr-font-chrome` | Ancient ceremonial caps — the Khalai-inscription voice | Navbar, panel headers, table **headers**, buttons, tabs |
-| `--pr-font-data` | Futuristic but readable | Device hostnames, table **body cells**, labels, badges, inputs |
-| `--pr-font-code` | Monospace | `pre` / `code` only |
+Copy the `protoss/` directory and the typography works. No system fonts to
+chase, no Google Fonts request, nothing for the end user to do.
+
+This matters more here than it does for Terran — see [Why this one
+needed it](#why-this-one-needed-it).
+
+---
+
+## The three voices
+
+| Token | Face | Role | Applied to |
+|---|---|---|---|
+| `--pr-font-chrome` | Cinzel 600 | Carved ceremonial capitals — the Khalai-inscription voice | Navbar, panel headers, table **headers**, buttons, tabs |
+| `--pr-font-data` | Rajdhani 500/700 | Futuristic but readable | Device hostnames, table **body cells**, labels, badges, inputs |
+| `--pr-font-code` | Space Mono 400 | Monospace | `pre` / `code` only |
 
 The design intent is a deliberate collision: Protoss are simultaneously ancient
 and hyper-advanced, so the frame is carved-stone Roman capitals and the data is
-clean technical sans. That contrast *is* the skin. Lose it and you have a blue
-and gold color swap.
+clean technical sans. That contrast *is* the skin.
 
 ---
 
-## What you get without webfonts
+## What ships
 
-Measured, not guessed — by probing whether a stack renders identically with and
-without its first choice:
-
-| Declared | Typically falls through to | Verdict |
-|---|---|---|
-| `Cinzel` (chrome) | `Georgia` | Acceptable. Serif caps still read as ceremonial, and Georgia is on virtually every machine. Noticeably less carved. |
-| `Rajdhani` (data) | `Segoe UI` / `system-ui` | **Weak.** This is a normal UI sans. All the futurism is gone. |
-| `Space Mono` (code) | `Consolas` / generic mono | Fine. Code blocks are a small surface. |
-
-So: the frame survives, the data does not. If you install only one face,
-install **Rajdhani**.
-
-> The screenshots in this repo were captured *without* the webfonts installed —
-> they show the Georgia/Segoe fallback. The real thing looks meaningfully
-> different, and better.
-
----
-
-## Self-hosting (recommended)
-
-Font files in `html/css/custom/` are served correctly: LibreNMS's rewrite to
-`index.php` is guarded by `RewriteCond %{REQUEST_FILENAME} !-f`, so a file that
-exists bypasses it. That directory is gitignored upstream, so the fonts survive
-`./daily.sh`.
-
-1. Download the `.woff2` files (both OFL-licensed, free to self-host):
-   - [Cinzel](https://fonts.google.com/specimen/Cinzel) — SemiBold 600
-   - [Rajdhani](https://fonts.google.com/specimen/Rajdhani) — Medium 500, Bold 700
-
-2. Drop them beside the stylesheet:
-
-```bash
-cp Cinzel-SemiBold.woff2 Rajdhani-Medium.woff2 Rajdhani-Bold.woff2 \
-   /opt/librenms/html/css/custom/
+```
+skins/protoss/fonts/
+  Cinzel-SemiBold.woff2     14.8 KB
+  Rajdhani-Medium.woff2     14.7 KB
+  Rajdhani-Bold.woff2       15.3 KB
+  SpaceMono-Regular.woff2   16.1 KB
+  OFL-Cinzel.txt
+  OFL-Rajdhani.txt
+  OFL-SpaceMono.txt
 ```
 
-3. Uncomment the `@font-face` block in section **1b** of `protoss.css`. It is
-   already written for exactly these three files.
+**~61 KB total.** Latin unicode-range subsets only, as served by Google Fonts —
+U+0000–00FF plus the punctuation the UI actually uses. All three faces are
+**SIL Open Font License 1.1**, which explicitly permits redistribution; the
+notices ship alongside them as the licence requires.
 
-`font-display: swap` is set, so text paints in the fallback immediately and
-upgrades when the font lands — no invisible-text flash on a slow poller box.
-
-Paths in `url()` resolve relative to the stylesheet, so no `base_url` juggling.
+Regenerate reproducibly with `scripts/fetch-fonts.ps1`.
 
 ---
 
-## Why not Google Fonts `@import`
+## Why this one needed it
 
-It works and it is one line. It is also an external network dependency inside a
-tool whose entire job is to keep working when the network is broken — an
-air-gapped or egress-filtered NOC gets the fallback anyway — plus a third-party
-request per operator per page load. Self-hosting is the same result without
-either problem.
+Before bundling, this skin was measurably *not* the skin it was designed to be.
+Probing each stack with and without its first choice — identical rendered
+widths mean the font is absent — showed:
+
+| Declared | Fell through to | Effect |
+|---|---|---|
+| `Cinzel` | `Georgia` | Acceptable. Serif caps still read ceremonial, just less carved. |
+| `Rajdhani` | `Segoe UI` | **Fatal.** An ordinary UI sans. All the futurism gone. |
+| `Space Mono` | generic mono | Fine. Small surface. |
+
+The frame survived; the data did not. On fallbacks alone Protoss was a blue and
+gold repaint of the default theme. Bundling is what makes it the skin.
+
+Early screenshots in this repo's history were captured before the fonts were
+bundled and show that degraded state.
+
+---
+
+## Why bundled rather than `@import`
+
+A Google Fonts `@import` is one line and would have worked on a laptop. It is
+the wrong call for a monitoring box:
+
+- A NOC is frequently air-gapped or egress-filtered. The skin would silently
+  degrade to the state described above, precisely where it is least convenient.
+- It leaks a third-party request per operator per page load.
+- It makes page render depend on someone else's CDN — inside the tool you use
+  to find out whether the network is broken.
+
+---
+
+## Why it works from `html/css/custom/`
+
+LibreNMS's catch-all rewrite is guarded:
+
+```apache
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^(.*)$ index.php
+```
+
+A file that exists on disk fails `!-f`, so the rewrite never fires and the file
+is served directly. That directory is gitignored upstream, so the fonts survive
+`./daily.sh`. Paths in `url()` resolve relative to the **stylesheet**, so the
+skin directory can live anywhere under the webroot.
 
 ---
 
 ## Going further
 
-If you want more esoteric and are willing to trade legibility:
+If you want more esoteric and will trade legibility for it:
 
 - **Chrome:** [Cormorant SC](https://fonts.google.com/specimen/Cormorant+SC) —
   higher contrast, more arcane. Gets fragile below 13px.
 - **Data:** [Orbitron](https://fonts.google.com/specimen/Orbitron) — maximum
-  sci-fi. Genuinely hard to read as a dense device list; consider scoping it to
-  the navbar and panel headers and leaving table cells on Rajdhani:
+  sci-fi, genuinely hard to read as a dense device list.
+
+Resist putting a display face in table cells. Scope it to the frame instead:
 
 ```css
 :root { --pr-font-chrome: "Orbitron", sans-serif; }
-html.dark .table > tbody > tr > td { font-family: "Rajdhani", system-ui, sans-serif; }
 ```
 
-Resist putting a display face in table cells. A device list is something people
-stare at for eight hours.
+Drop the new `.woff2` into `fonts/`, point its `@font-face` at it, and nothing
+below section 1b needs to change — no rule in the skin names a font directly.
