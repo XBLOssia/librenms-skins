@@ -2,7 +2,7 @@
 
 StarCraft-inspired skins for [LibreNMS](https://github.com/librenms/librenms).
 
-Currently shipping **Terran**. Protoss and Zerg are planned.
+Three skins: **Terran**, **Protoss** and **Zerg**.
 
 All artwork is original CSS — gradients, shadows and generated geometry. No
 Blizzard assets are used or redistributed. These are "inspired by" skins, not
@@ -18,7 +18,19 @@ asset ports.
 | **Protoss** | Chamfered, gold-bracketed | Void blue + keratinous gold, psionic flame | Cinzel + Rajdhani |
 | **Zerg** | Asymmetric, grown, uneven | Creep purple + bone, ichor green, ember orange | Metamorphous + Chakra Petch |
 
-All three are complete and verified.
+All three are installable and verified. They cover the application frame —
+navbar, panels, tables, buttons, forms, alerts, labels, tabs, modals — which is
+**40 of the 92 components** LibreNMS's dark theme styles. Contextual panel
+variants, pagination, select2 dropdowns and the mobile menu are not yet
+skinned and will show stock dark-theme colours.
+
+Check the current number yourself:
+
+```bash
+./scripts/coverage.sh /opt/librenms
+```
+
+[docs/ROADMAP.md](docs/ROADMAP.md) has the prioritised backlog.
 
 Verified against LibreNMS master @ `63e0394` (2026-09-17).
 
@@ -72,9 +84,13 @@ lnms config:set webui.custom_css '[]'
 
 ## Retheming
 
-The whole skin is driven by the token block at the top of
-[`skins/terran/terran.css`](skins/terran/terran.css). Change the variables in
-`:root` and nothing else — every rule below reads from them.
+Each skin is driven entirely by the token block at the top of its stylesheet —
+[terran](skins/terran/terran.css) · [protoss](skins/protoss/protoss.css) ·
+[zerg](skins/zerg/zerg.css). Change the variables in `:root` and nothing else;
+every rule below reads from them, and no rule names a colour or font directly.
+
+This is deliberately the affordance LibreNMS core does not have — see
+[docs/FINDINGS.md](docs/FINDINGS.md).
 
 ### Typography
 
@@ -89,12 +105,12 @@ frame against a clean futuristic sans for the data. Zerg puts a gnarled organic
 display face on the frame and keeps a readable angular sans on the data — the
 weirdness lives in the geometry instead, which is what keeps it usable.
 
-Both skins bundle their faces, so this works with no setup and no external
+All three bundle their faces, so this works with no setup and no external
 requests — which matters on an air-gapped NOC box, where a Google Fonts
 `@import` would silently degrade exactly where it is least convenient to
-debug. Details, sizes and licensing:
-[`skins/terran/FONTS.md`](skins/terran/FONTS.md) ·
-[`skins/protoss/FONTS.md`](skins/protoss/FONTS.md).
+debug. Details, sizes, licensing and how to swap a face:
+[terran](skins/terran/FONTS.md) · [protoss](skins/protoss/FONTS.md) ·
+[zerg](skins/zerg/FONTS.md).
 
 ---
 
@@ -113,9 +129,9 @@ The plugin system cannot carry a theme. It exposes exactly five hooks
 (`DeviceOverviewHook`, `MenuEntryHook`, `PortTabHook`, `SettingsHook`,
 `SinglePageHook`), all of which inject content. None publish CSS or assets.
 
-Building Terran surfaced concrete, measurable problems with theming LibreNMS as
-it stands. Those are written up in **[docs/FINDINGS.md](docs/FINDINGS.md)** with
-reproducible numbers — that document, not the skin, is the interesting output
+Building these surfaced concrete, measurable problems with theming LibreNMS as
+it stands. They are written up in **[docs/FINDINGS.md](docs/FINDINGS.md)** with
+reproducible numbers — that document, not the skins, is the interesting output
 of this project.
 
 ---
@@ -137,5 +153,32 @@ buttons at the top of the page.
 
 The harness reproduces LibreNMS's real DOM and loads the real stylesheets in
 the real order from `resources/views/layouts/librenmsv1.blade.php`. Vendored
-CSS is gitignored — LibreNMS is GPLv3 and its stylesheets are not redistributed
-here.
+CSS and webfonts are gitignored — LibreNMS is GPLv3 and its assets are not
+redistributed here.
+
+Note that the harness renders roughly what the skins already cover, so it is a
+weak regression net — it cannot show you a gap it does not contain. Test on a
+real instance before trusting it.
+
+---
+
+## Repository layout
+
+```
+skins/<name>/<name>.css     the skin - token block at top drives everything
+skins/<name>/fonts/         bundled OFL webfonts + licence notices
+skins/<name>/FONTS.md       typography rationale and how to swap faces
+harness/                    static preview, real LibreNMS CSS, real DOM
+scripts/fetch-fonts.ps1     regenerate the bundled fonts reproducibly
+scripts/coverage.sh         report which components no skin has styled yet
+docs/FINDINGS.md            what building these surfaced about theming LibreNMS
+docs/ROADMAP.md             prioritised backlog and open decisions
+```
+
+## Licence
+
+The skins are original CSS. The bundled fonts are SIL Open Font License 1.1,
+with notices included beside them in each `fonts/` directory.
+
+**The repository itself has no licence yet** — see
+[docs/ROADMAP.md](docs/ROADMAP.md#open-decisions).
