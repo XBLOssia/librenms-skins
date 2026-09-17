@@ -1,0 +1,704 @@
+/* =============================================================================
+ * ZERG — a LibreNMS skin
+ * -----------------------------------------------------------------------------
+ * Chitinous carapace over living creep. Bone ridges, ichor glow, ember vents,
+ * and a slow pulse under everything.
+ *
+ * DESIGN NOTE — this skin is built by inverting the other two. Terran is
+ * square, riveted and symmetric; Protoss is chamfered, bracketed and
+ * ceremonial. Both are *manufactured*. Zerg is grown, so:
+ *   - no corner is square and no two corners match (asymmetric border-radius)
+ *   - borders are uneven in width, thicker where carapace would thicken
+ *   - surfaces are mottled rather than gradient-smooth
+ *   - things breathe
+ * If a rule here looks sloppy, check it against that list before "fixing" it.
+ * The irregularity is the point.
+ *
+ * Inspired by Zerg design language; all artwork is original CSS (gradients,
+ * shadows, generated geometry). No Blizzard assets are used or redistributed.
+ *
+ * REQUIREMENTS
+ *   Set your site style to "dark" first. This skin is an *overlay* on the
+ *   stock dark theme (html/css/tw_dark.css), not a replacement for it.
+ *     Preferences -> Theme -> Dark
+ *
+ * INSTALL
+ *   cp -r skins/zerg /opt/librenms/html/css/custom/
+ *   lnms config:set webui.custom_css '["css/custom/zerg/zerg.css"]'
+ *
+ * WHY EVERY RULE IS PREFIXED `html.dark`
+ *   tw_dark.css styles the dark theme with `.dark .thing` (specificity 0,2,0).
+ *   A custom_css file loads after it, but source order only breaks ties at
+ *   EQUAL specificity — so bare `.thing` (0,1,0) silently loses. `html.dark`
+ *   yields (0,2,1), which beats it without reaching for !important.
+ *   Where !important IS used below, it is always marked with a [!] note
+ *   explaining which upstream rule forced it. See docs/FINDINGS.md.
+ *
+ * Verified against LibreNMS master @ 63e0394 (2026-09-17).
+ * ============================================================================= */
+
+/* -----------------------------------------------------------------------------
+ * 1. TOKENS
+ * -------------------------------------------------------------------------- */
+:root {
+  /* Creep & flesh — purple-black biomass, never neutral grey */
+  --zg-void:          #080409;
+  --zg-hull:          #130a13;   /* page background — deep creep            */
+  --zg-flesh:         #1d1019;   /* panel body                              */
+  --zg-flesh-raised:  #2b1825;   /* panel header                            */
+  --zg-flesh-hi:      #3b2132;   /* hover / active                          */
+  --zg-carapace:      #4d2d3d;   /* chitin edges                            */
+  --zg-carapace-lit:  #6d4457;   /* lit edge of a plate                     */
+
+  /* Bone — the ivory ridges on Zerg structures */
+  --zg-bone:          #cbb694;
+  --zg-bone-dim:      #96836a;
+  --zg-bone-deep:     #5e4f3c;
+
+  /* Fluids: ichor (alive), ember (vents), blood (wounded) */
+  --zg-ichor:         #a9cc3c;   /* sickly yellow-green — healthy           */
+  --zg-ichor-deep:    #22300b;
+  --zg-ember:         #ff7a1f;   /* orange vent glow — warning              */
+  --zg-ember-deep:    #3d1c05;
+  --zg-blood:         #d8453f;   /* danger                                  */
+  --zg-blood-deep:    #3d0e0d;
+  --zg-violet:        #9d5bd8;   /* cerebrate psionics — info accent        */
+  --zg-violet-deep:   #241340;
+
+  /* Text — warm, bone-tinted, never cold grey */
+  --zg-text:          #d6c5b6;
+  --zg-text-dim:      #9d8877;
+  --zg-text-mute:     #6e5b50;
+  --zg-text-bright:   #f7ede1;
+
+  /* Geometry — nothing square, nothing matching.
+     Each of these is an 8-value radius: four horizontal, four vertical. */
+  --zg-grow-sm:  4px 11px 5px 13px / 10px 4px 14px 5px;
+  --zg-grow-md:  8px 20px 10px 24px / 18px 9px 26px 11px;
+  --zg-grow-lg:  14px 34px 18px 40px / 30px 15px 44px 19px;
+  --zg-grow-pod: 40% 60% 55% 45% / 50% 45% 55% 50%;   /* blobs */
+
+  --zg-membrane: inset 0 1px 0 rgba(203, 182, 148, .09),
+                 inset 0 -2px 6px rgba(0, 0, 0, .55);
+  --zg-cavity:   inset 0 3px 9px rgba(0, 0, 0, .7);
+
+  /* Creep: mottled biomass, built from offset radial blooms rather than a
+     smooth gradient so it reads as organic rather than lit. */
+  --zg-creep:
+    radial-gradient(ellipse 380px 220px at 12% 18%, rgba(110, 45, 90, .28) 0%, transparent 62%),
+    radial-gradient(ellipse 300px 180px at 78% 34%, rgba(75, 30, 70, .26) 0%, transparent 60%),
+    radial-gradient(ellipse 420px 260px at 42% 72%, rgba(95, 38, 60, .22) 0%, transparent 64%),
+    radial-gradient(ellipse 260px 160px at 88% 86%, rgba(120, 55, 40, .16) 0%, transparent 58%),
+    radial-gradient(ellipse 340px 200px at 4% 92%, rgba(70, 28, 62, .2) 0%, transparent 60%);
+
+  /* Veins — irregular striation for ridges and headers */
+  --zg-veins: repeating-linear-gradient(
+      68deg,
+      transparent 0 7px,
+      rgba(203, 182, 148, .05) 7px 8px,
+      transparent 8px 19px,
+      rgba(0, 0, 0, .22) 19px 21px);
+
+  /* Typography — see FONTS.md
+     --zg-font-chrome  gnarled organic display: navbar, headers, buttons, tabs
+     --zg-font-data    angular carapace-plate sans: hostnames, cells, labels
+     --zg-font-code    monospace, code blocks only */
+  --zg-font-chrome: "Zerg Chrome", "Metamorphous", "Papyrus", "Luminari",
+                    "Georgia", serif;
+  --zg-font-data:   "Zerg Data", "Chakra Petch", "Saira Semi Condensed",
+                    "Segoe UI", system-ui, sans-serif;
+  --zg-font-code:   "Zerg Code", "Space Mono", "Consolas", ui-monospace, monospace;
+}
+
+/* -----------------------------------------------------------------------------
+ * 1b. BUNDLED WEBFONTS
+ *
+ * The fonts ship with the skin — copy the whole zerg/ directory and they work.
+ * Nothing to install, and no request ever leaves the box.
+ *
+ * These load correctly from html/css/custom/ because LibreNMS's rewrite to
+ * index.php is guarded by `RewriteCond %{REQUEST_FILENAME} !-f` — a file that
+ * exists on disk bypasses it. That directory is gitignored upstream, so the
+ * fonts survive ./daily.sh alongside this stylesheet.
+ *
+ * Latin subsets only, ~58KB total. All three faces are SIL Open Font License
+ * 1.1; the notices are in fonts/. Regenerate with scripts/fetch-fonts.ps1.
+ * -------------------------------------------------------------------------- */
+@font-face {
+  font-family: "Zerg Chrome";
+  src: url("fonts/Metamorphous-Regular.woff2") format("woff2");
+  font-weight: 400 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Zerg Data";
+  src: url("fonts/ChakraPetch-Medium.woff2") format("woff2");
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Zerg Data";
+  src: url("fonts/ChakraPetch-Bold.woff2") format("woff2");
+  font-weight: 600 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Zerg Code";
+  src: url("fonts/SpaceMono-Regular.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+
+/* -----------------------------------------------------------------------------
+ * 2. THE CREEP — page background
+ * -------------------------------------------------------------------------- */
+html.dark,
+html.dark body {
+  background-color: var(--zg-hull);
+  color: var(--zg-text);
+  font-family: var(--zg-font-data);
+}
+
+html.dark body {
+  background-image: var(--zg-creep),
+    linear-gradient(175deg, var(--zg-void) 0%, var(--zg-hull) 45%, #170c17 100%);
+  background-attachment: fixed;
+}
+
+html.dark a {
+  color: var(--zg-ichor);
+  transition: color .18s ease, text-shadow .18s ease;
+}
+html.dark a:hover,
+html.dark a:focus {
+  color: #c9e85e;
+  text-shadow: 0 0 11px rgba(169, 204, 60, .5);
+  text-decoration: none;
+}
+
+/* Not a line — a strand of sinew, thicker in the middle. */
+html.dark hr {
+  border: 0;
+  height: 2px;
+  background: radial-gradient(ellipse 60% 100% at 50% 50%,
+    var(--zg-carapace-lit) 0%, var(--zg-carapace) 45%, transparent 85%);
+}
+
+/* -----------------------------------------------------------------------------
+ * 3. THE HIVE — top navbar
+ * A slab of carapace with a bone ridge on top and ember vents beneath.
+ * -------------------------------------------------------------------------- */
+html.dark .navbar-default {
+  background-color: var(--zg-flesh-raised);
+  background-image: var(--zg-veins),
+    linear-gradient(180deg, #341d2c 0%, #1e1119 100%);
+  border: 0;
+  border-bottom: 2px solid var(--zg-carapace);
+  box-shadow: 0 3px 16px rgba(0, 0, 0, .7);
+  position: relative;
+}
+
+/* Bone ridge capping the hive. Uneven opacity so it reads as grown bone
+   rather than a drawn rule. */
+html.dark .navbar-default::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: 3px;
+  background: linear-gradient(90deg,
+    transparent 0%, var(--zg-bone-deep) 6%, var(--zg-bone) 22%,
+    var(--zg-bone-dim) 40%, var(--zg-bone) 58%, var(--zg-bone-deep) 78%,
+    var(--zg-bone-dim) 92%, transparent 100%);
+  pointer-events: none;
+}
+
+/* Ember vent glow beneath — breathes. */
+html.dark .navbar-default::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -2px;
+  height: 2px;
+  background: linear-gradient(90deg,
+    transparent 0%, var(--zg-ember) 25%, #ffb066 50%,
+    var(--zg-ember) 75%, transparent 100%);
+  box-shadow: 0 0 14px rgba(255, 122, 31, .55);
+  animation: zg-breathe 6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes zg-breathe {
+  0%, 100% { opacity: .45; }
+  50%      { opacity: 1; }
+}
+
+html.dark .navbar-default .navbar-brand {
+  color: var(--zg-bone);
+  font-family: var(--zg-font-chrome);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  text-shadow: 0 0 14px rgba(203, 182, 148, .35);
+}
+
+html.dark .navbar-default .navbar-nav > li > a {
+  color: var(--zg-text-dim);
+  font-family: var(--zg-font-chrome);
+  font-size: 13px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  transition: color .18s ease, background-color .18s ease;
+}
+
+html.dark .navbar-default .navbar-nav > li > a:hover,
+html.dark .navbar-default .navbar-nav > li > a:focus,
+html.dark .navbar-default .navbar-nav > .open > a,
+html.dark .navbar-default .navbar-nav > .open > a:hover,
+html.dark .navbar-default .navbar-nav > .open > a:focus {
+  background-color: var(--zg-flesh-hi);
+  color: var(--zg-ember);
+  box-shadow: inset 0 -3px 0 0 var(--zg-ember),
+              inset 0 -16px 22px -16px rgba(255, 122, 31, .55);
+}
+
+html.dark .fa-nav-icons { color: var(--zg-text-mute); }
+html.dark .navbar-nav > li > a:hover .fa-nav-icons,
+html.dark .navbar-nav > .open > a .fa-nav-icons {
+  color: var(--zg-ichor);
+  text-shadow: 0 0 9px rgba(169, 204, 60, .55);
+}
+html.dark .icon-theme { color: var(--zg-text-dim); }
+
+/* Dropdowns — a fleshy sac that has grown out of the hive */
+html.dark .navbar-default .dropdown-menu,
+html.dark .dropdown-menu {
+  background-color: var(--zg-flesh);
+  background-image: linear-gradient(180deg, #281624 0%, #180d15 100%);
+  border: 1px solid var(--zg-carapace);
+  border-top: 3px solid var(--zg-bone-dim);
+  border-radius: var(--zg-grow-md);
+  box-shadow: 0 16px 42px rgba(0, 0, 0, .85),
+              inset 0 0 26px rgba(0, 0, 0, .5);
+  padding: 4px 0;
+  overflow: hidden;
+}
+
+html.dark .dropdown-menu > li > a {
+  color: var(--zg-text-dim);
+  font-family: var(--zg-font-data);
+  font-weight: 500;
+  letter-spacing: .02em;
+  padding: 6px 18px;
+  border-left: 3px solid transparent;
+  transition: all .15s ease;
+}
+
+html.dark .dropdown-menu > li > a:hover,
+html.dark .dropdown-menu > li > a:focus {
+  background-color: var(--zg-flesh-hi);
+  color: var(--zg-text-bright);
+  border-left-color: var(--zg-ichor);
+  padding-left: 23px;
+}
+
+html.dark .dropdown-menu .divider {
+  background: linear-gradient(90deg, transparent, var(--zg-carapace), transparent);
+}
+html.dark .dropdown-header {
+  color: var(--zg-bone);
+  font-family: var(--zg-font-chrome);
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  font-size: 10px;
+}
+
+/* -----------------------------------------------------------------------------
+ * 4. CARAPACE — panels
+ * Asymmetric radii and uneven border widths: thicker on the left and bottom,
+ * where a shell would bear load.
+ * -------------------------------------------------------------------------- */
+html.dark .panel,
+html.dark .panel-default {
+  background-color: var(--zg-flesh);
+  background-image: radial-gradient(ellipse 140% 90% at 20% 0%,
+    rgba(109, 68, 87, .2) 0%, transparent 65%);
+  border: 1px solid var(--zg-carapace);
+  border-left-width: 3px;
+  border-bottom-width: 2px;
+  border-radius: var(--zg-grow-lg);
+  box-shadow: var(--zg-membrane), 0 6px 22px rgba(0, 0, 0, .55);
+}
+
+html.dark .panel-default > .panel-heading,
+html.dark .panel > .panel-heading {
+  background-color: var(--zg-flesh-raised);
+  background-image: var(--zg-veins),
+    linear-gradient(180deg, #38202f 0%, #241420 100%);
+  border-bottom: 2px solid var(--zg-bone-deep);
+  border-radius: 0;
+  color: var(--zg-bone);
+  font-family: var(--zg-font-chrome);
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  position: relative;
+  padding-left: 20px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .8);
+}
+
+/* A bone spur growing from the leading edge of each header — tapered, because
+   nothing on a Zerg structure is a uniform bar. */
+html.dark .panel-default > .panel-heading::before,
+html.dark .panel > .panel-heading::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 12%; bottom: 12%;
+  width: 6px;
+  background: linear-gradient(180deg,
+    transparent 0%, var(--zg-bone-dim) 14%, var(--zg-bone) 45%,
+    var(--zg-bone-dim) 72%, transparent 100%);
+  border-radius: 0 60% 70% 0 / 0 50% 50% 0;
+  box-shadow: 0 0 9px rgba(203, 182, 148, .3);
+}
+
+html.dark .panel-title,
+html.dark .panel-heading .panel-title a,
+html.dark .panel-default > .panel-heading .icon-theme,
+html.dark .panel-default > .panel-heading a:link,
+html.dark .panel-default > .panel-heading a:visited {
+  color: var(--zg-bone);
+}
+
+html.dark .panel-body { background-color: transparent; color: var(--zg-text); }
+
+html.dark .panel-footer {
+  background-color: rgba(8, 4, 9, .55);
+  border-top: 1px solid var(--zg-carapace);
+  color: var(--zg-text-dim);
+}
+
+html.dark .widget-header {
+  background-image: var(--zg-veins),
+    linear-gradient(180deg, #38202f 0%, #241420 100%);
+  color: var(--zg-bone);
+  font-family: var(--zg-font-chrome);
+  text-transform: uppercase;
+  letter-spacing: .09em;
+}
+
+/* -----------------------------------------------------------------------------
+ * 5. READOUTS — tables
+ * -------------------------------------------------------------------------- */
+html.dark .table,
+html.dark .table > tbody > tr > td,
+html.dark .table > tbody > tr > th,
+html.dark .table > thead > tr > td,
+html.dark .table > thead > tr > th {
+  border-color: rgba(203, 182, 148, .09);
+  color: var(--zg-text);
+}
+
+html.dark .table > thead > tr > th {
+  background-color: rgba(8, 4, 9, .6);
+  border-bottom: 2px solid var(--zg-bone-deep);
+  color: var(--zg-bone);
+  font-family: var(--zg-font-chrome);
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+
+html.dark .table > tbody > tr > td {
+  font-family: var(--zg-font-data);
+  font-size: 13.5px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+html.dark .table-striped > tbody > tr:nth-of-type(odd)  { background-color: rgba(109, 68, 87, .12); }
+html.dark .table-striped > tbody > tr:nth-of-type(even) { background-color: transparent; }
+
+html.dark .table-hover > tbody > tr:hover,
+html.dark .table-hover > tbody > tr:hover > td {
+  background-color: rgba(169, 204, 60, .07);
+  box-shadow: inset 4px 0 0 0 var(--zg-ichor);
+}
+
+html.dark .bootgrid-header,
+html.dark .bootgrid-footer {
+  background-color: var(--zg-flesh-raised);
+  border-color: var(--zg-carapace);
+  color: var(--zg-text-dim);
+}
+html.dark .bootgrid-table th { color: var(--zg-bone); }
+html.dark .bootgrid-table td { color: var(--zg-text); }
+
+/* -----------------------------------------------------------------------------
+ * 6. CONTROLS — buttons
+ * Grown pods, not stamped rectangles. Each corner differs.
+ *
+ * [!] The .lnms-btn-* classes in resources/css/app.css are built with
+ *     `@apply ... tw:text-white!`, which compiles to `!important` on an
+ *     unlayered rule. No specificity beats that, so a skin must answer with
+ *     !important of its own. See docs/FINDINGS.md section 2.
+ * -------------------------------------------------------------------------- */
+html.dark .btn {
+  border-radius: var(--zg-grow-sm);
+  font-family: var(--zg-font-chrome);
+  font-size: 12px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  border-width: 1px;
+  border-left-width: 2px;
+  box-shadow: var(--zg-membrane);
+  transition: filter .16s ease, box-shadow .16s ease;
+}
+html.dark .btn:hover  { filter: brightness(1.2) saturate(1.15); }
+html.dark .btn:active { box-shadow: var(--zg-cavity); }
+
+html.dark .btn-default,
+html.dark .lnms-btn-default {
+  background-color: var(--zg-flesh-hi) !important;
+  background-image: linear-gradient(180deg, #43273a 0%, #2a1826 100%) !important;
+  border-color: var(--zg-carapace) !important;
+  color: var(--zg-text) !important;
+}
+
+html.dark .btn-primary,
+html.dark .lnms-btn-primary {
+  background-color: #5d2f86 !important;
+  background-image: linear-gradient(180deg, #7139a3 0%, #452266 100%) !important;
+  border-color: var(--zg-violet) !important;
+  color: var(--zg-text-bright) !important;
+}
+
+html.dark .btn-success,
+html.dark .lnms-btn-success {
+  background-color: #5d7a17 !important;
+  background-image: linear-gradient(180deg, #74961f 0%, #435711 100%) !important;
+  border-color: var(--zg-ichor) !important;
+  color: #f2ffd4 !important;
+}
+
+html.dark .btn-danger,
+html.dark .lnms-btn-danger {
+  background-color: #9c2723 !important;
+  background-image: linear-gradient(180deg, #c03530 0%, #711a17 100%) !important;
+  border-color: var(--zg-blood) !important;
+  color: #fff !important;
+  box-shadow: var(--zg-membrane), 0 0 13px rgba(216, 69, 63, .4) !important;
+}
+
+html.dark .btn-warning,
+html.dark .lnms-btn-warning {
+  background-color: #a8500f !important;
+  background-image: linear-gradient(180deg, #d1651a 0%, #7c3a09 100%) !important;
+  border-color: var(--zg-ember) !important;
+  color: #ffeedd !important;
+  box-shadow: var(--zg-membrane), 0 0 13px rgba(255, 122, 31, .35) !important;
+}
+
+/* -----------------------------------------------------------------------------
+ * 7. INPUTS — orifices, not boxes
+ * -------------------------------------------------------------------------- */
+html.dark .form-control,
+html.dark input[type="text"],
+html.dark input[type="password"],
+html.dark input[type="number"],
+html.dark input[type="search"],
+html.dark textarea,
+html.dark select {
+  background-color: rgba(8, 4, 9, .72);
+  border: 1px solid var(--zg-carapace);
+  border-top-width: 2px;
+  border-radius: var(--zg-grow-sm);
+  box-shadow: var(--zg-cavity);
+  color: var(--zg-text);
+  font-family: var(--zg-font-data);
+  font-weight: 500;
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+
+html.dark .form-control:focus {
+  border-color: var(--zg-ichor);
+  box-shadow: var(--zg-cavity), 0 0 0 1px rgba(169, 204, 60, .3),
+              0 0 13px rgba(169, 204, 60, .28);
+  outline: 0;
+}
+
+html.dark .form-control::placeholder { color: var(--zg-text-mute); }
+
+html.dark .input-group-addon {
+  background-color: var(--zg-flesh-raised);
+  border-color: var(--zg-carapace);
+  color: var(--zg-bone);
+}
+
+/* -----------------------------------------------------------------------------
+ * 8. STATUS — alerts, labels, badges
+ * ichor = alive, ember = straining, blood = wounded, violet = psionic
+ * -------------------------------------------------------------------------- */
+html.dark .alert {
+  border-radius: var(--zg-grow-md);
+  border-width: 1px 1px 2px 5px;
+  font-family: var(--zg-font-data);
+  font-weight: 500;
+  box-shadow: var(--zg-membrane);
+}
+
+html.dark .alert-danger {
+  background-color: var(--zg-blood-deep);
+  border-color: var(--zg-carapace) var(--zg-carapace) var(--zg-carapace) var(--zg-blood);
+  color: #ffb0ab;
+  box-shadow: var(--zg-membrane), inset 16px 0 26px -18px rgba(216, 69, 63, .9);
+}
+html.dark .alert-success {
+  background-color: var(--zg-ichor-deep);
+  border-color: var(--zg-carapace) var(--zg-carapace) var(--zg-carapace) var(--zg-ichor);
+  color: #d3ea8e;
+  box-shadow: var(--zg-membrane), inset 16px 0 26px -18px rgba(169, 204, 60, .75);
+}
+html.dark .alert-warning {
+  background-color: var(--zg-ember-deep);
+  border-color: var(--zg-carapace) var(--zg-carapace) var(--zg-carapace) var(--zg-ember);
+  color: #ffc494;
+  box-shadow: var(--zg-membrane), inset 16px 0 26px -18px rgba(255, 122, 31, .8);
+}
+html.dark .alert-info {
+  background-color: var(--zg-violet-deep);
+  border-color: var(--zg-carapace) var(--zg-carapace) var(--zg-carapace) var(--zg-violet);
+  color: #d0aef0;
+  box-shadow: var(--zg-membrane), inset 16px 0 26px -18px rgba(157, 91, 216, .8);
+}
+
+/* Status bugs — spore sacs */
+html.dark .label,
+html.dark .badge {
+  border-radius: var(--zg-grow-sm);
+  font-family: var(--zg-font-data);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  padding: .3em .72em;
+  box-shadow: var(--zg-membrane);
+}
+
+html.dark .label-danger,  html.dark .badge-danger  { background-color: #9c2723; color: #ffe2e0; }
+html.dark .label-success, html.dark .badge-success { background-color: #5d7a17; color: #f2ffd4; }
+html.dark .label-warning, html.dark .badge-warning { background-color: #a8500f; color: #ffeedd; }
+html.dark .label-info,    html.dark .badge-info    { background-color: #5d2f86; color: #ecd9ff; }
+html.dark .label-default, html.dark .badge-default { background-color: var(--zg-flesh-hi); color: var(--zg-text-dim); }
+
+/* Notification counter — a swelling egg sac */
+html.dark .badge-navbar-user.badge-danger {
+  background-color: var(--zg-blood);
+  color: #fff;
+  border-radius: var(--zg-grow-pod);
+  box-shadow: 0 0 11px rgba(216, 69, 63, .8);
+  animation: zg-swell 2.8s ease-in-out infinite;
+}
+
+@keyframes zg-swell {
+  0%, 100% { box-shadow: 0 0 7px  rgba(216, 69, 63, .5);  transform: scale(1); }
+  50%      { box-shadow: 0 0 17px rgba(216, 69, 63, .95); transform: scale(1.09); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.dark .badge-navbar-user.badge-danger,
+  html.dark .navbar-default::after { animation: none; }
+}
+
+/* Device state links.
+   [!] .device-link-down ships `tw:dark:text-red-500!` from app.css. */
+html.dark .device-link-up,
+html.dark .device-link-down,
+html.dark .device-link-disabled {
+  font-family: var(--zg-font-data);
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: .01em;
+}
+
+html.dark .device-link-up   { color: var(--zg-ichor) !important; }
+html.dark .device-link-down {
+  color: var(--zg-blood) !important;
+  text-shadow: 0 0 11px rgba(216, 69, 63, .55);
+}
+html.dark .device-link-disabled { color: var(--zg-text-mute) !important; }
+
+/* -----------------------------------------------------------------------------
+ * 9. CHROME — progress, tabs, modals, wells
+ * -------------------------------------------------------------------------- */
+html.dark .pace .pace-progress {
+  background: linear-gradient(90deg, var(--zg-ichor), var(--zg-ember));
+}
+html.dark .pace .pace-progress-inner {
+  box-shadow: 0 0 12px var(--zg-ichor), 0 0 6px var(--zg-ember);
+}
+html.dark .pace .pace-activity {
+  border-top-color: var(--zg-ichor);
+  border-left-color: var(--zg-ember);
+}
+
+html.dark .pagemenu-selected {
+  background-color: var(--zg-flesh-hi);
+  box-shadow: inset 0 -3px 0 0 var(--zg-ichor);
+}
+
+html.dark .well {
+  background-color: rgba(8, 4, 9, .55);
+  border: 1px solid var(--zg-carapace);
+  border-left-width: 3px;
+  border-radius: var(--zg-grow-md);
+  box-shadow: var(--zg-cavity);
+}
+
+html.dark .nav-tabs { border-bottom-color: var(--zg-bone-deep); }
+html.dark .nav-tabs > li > a {
+  color: var(--zg-text-dim);
+  border-radius: var(--zg-grow-sm) var(--zg-grow-sm) 0 0;
+  font-family: var(--zg-font-chrome);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+html.dark .nav-tabs > li.active > a,
+html.dark .nav-tabs > li.active > a:hover,
+html.dark .nav-tabs > li.active > a:focus {
+  background-color: var(--zg-flesh);
+  border-color: var(--zg-carapace);
+  border-bottom-color: transparent;
+  border-top: 3px solid var(--zg-bone-dim);
+  color: var(--zg-bone);
+}
+
+html.dark .modal-content {
+  background-color: var(--zg-flesh);
+  border: 1px solid var(--zg-carapace);
+  border-left-width: 4px;
+  border-top: 3px solid var(--zg-bone-dim);
+  border-radius: var(--zg-grow-lg);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, .9);
+}
+html.dark .modal-header,
+html.dark .modal-footer { border-color: var(--zg-carapace); }
+
+html.dark pre,
+html.dark code {
+  background-color: rgba(8, 4, 9, .8);
+  border: 1px solid var(--zg-carapace);
+  border-left: 3px solid var(--zg-ichor);
+  border-radius: var(--zg-grow-sm);
+  color: var(--zg-ichor);
+  font-family: var(--zg-font-code);
+  box-shadow: var(--zg-cavity);
+}
+
+/* -----------------------------------------------------------------------------
+ * 10. GRAPHS
+ * RRDtool renders graphs server-side to PNG using colours from PHP, not CSS.
+ * Nothing here can change the ink inside a graph — see docs/FINDINGS.md.
+ * -------------------------------------------------------------------------- */
+html.dark .graph-image,
+html.dark img.graph-image {
+  background-color: #fff;
+  border: 1px solid var(--zg-carapace);
+  border-radius: var(--zg-grow-sm);
+  box-shadow: var(--zg-membrane);
+}

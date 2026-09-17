@@ -35,7 +35,7 @@ body { padding-top: 60px; }
 <!-- THE SKIN — loaded last, exactly as webui.custom_css does.
      Pick with ?skin=terran (default) or ?skin=protoss, or use the switcher. -->
 <script>
-  var SKINS = ['terran', 'protoss'];
+  var SKINS = ['terran', 'protoss', 'zerg'];
   var skin = (new URLSearchParams(location.search).get('skin') || 'terran').toLowerCase();
   if (SKINS.indexOf(skin) === -1) skin = 'terran';
   document.write('<link id="skin-css" rel="stylesheet" href="../skins/' +

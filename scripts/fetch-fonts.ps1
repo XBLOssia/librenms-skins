@@ -25,7 +25,11 @@ $faces = @(
   @{ family='Cinzel';          name='Cinzel';          weight=600; skin='protoss'; file='Cinzel-SemiBold.woff2' },
   @{ family='Rajdhani';        name='Rajdhani';        weight=500; skin='protoss'; file='Rajdhani-Medium.woff2' },
   @{ family='Rajdhani';        name='Rajdhani';        weight=700; skin='protoss'; file='Rajdhani-Bold.woff2' },
-  @{ family='Space+Mono';      name='Space Mono';      weight=400; skin='protoss'; file='SpaceMono-Regular.woff2' }
+  @{ family='Space+Mono';      name='Space Mono';      weight=400; skin='protoss'; file='SpaceMono-Regular.woff2' },
+  @{ family='Metamorphous';    name='Metamorphous';    weight=400; skin='zerg';    file='Metamorphous-Regular.woff2' },
+  @{ family='Chakra+Petch';    name='Chakra Petch';    weight=500; skin='zerg';    file='ChakraPetch-Medium.woff2' },
+  @{ family='Chakra+Petch';    name='Chakra Petch';    weight=700; skin='zerg';    file='ChakraPetch-Bold.woff2' },
+  @{ family='Space+Mono';      name='Space Mono';      weight=400; skin='zerg';    file='SpaceMono-Regular.woff2' }
 )
 
 foreach ($f in $faces) {
@@ -52,7 +56,10 @@ $licenses = @(
   @{ dir='jetbrainsmono';  skin='terran';  file='OFL-JetBrainsMono.txt' },
   @{ dir='cinzel';         skin='protoss'; file='OFL-Cinzel.txt' },
   @{ dir='rajdhani';       skin='protoss'; file='OFL-Rajdhani.txt' },
-  @{ dir='spacemono';      skin='protoss'; file='OFL-SpaceMono.txt' }
+  @{ dir='spacemono';      skin='protoss'; file='OFL-SpaceMono.txt' },
+  @{ dir='metamorphous';   skin='zerg';    file='OFL-Metamorphous.txt' },
+  @{ dir='chakrapetch';    skin='zerg';    file='OFL-ChakraPetch.txt' },
+  @{ dir='spacemono';      skin='zerg';    file='OFL-SpaceMono.txt' }
 )
 
 foreach ($l in $licenses) {

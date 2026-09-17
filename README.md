@@ -12,11 +12,13 @@ asset ports.
 
 ## Status
 
-| Skin | State | Notes |
-|---|---|---|
-| Terran | Working | Gunmetal plating, hazard striping, red LEDs, green phosphor |
-| Protoss | Working | Gold armour on void-blue, khaydarin facets, psionic flame |
-| Zerg | Planned | Organic carapace, purple-brown, creep textures |
+| Skin | Geometry | Palette | Type |
+|---|---|---|---|
+| **Terran** | Square, riveted, symmetric | Gunmetal + hazard yellow, red LEDs, green phosphor | Saira Condensed + JetBrains Mono |
+| **Protoss** | Chamfered, gold-bracketed | Void blue + keratinous gold, psionic flame | Cinzel + Rajdhani |
+| **Zerg** | Asymmetric, grown, uneven | Creep purple + bone, ichor green, ember orange | Metamorphous + Chakra Petch |
+
+All three are complete and verified.
 
 Verified against LibreNMS master @ `63e0394` (2026-09-17).
 
@@ -45,7 +47,7 @@ lnms config:set webui.custom_css '["css/custom/terran/terran.css"]'
 
 4. Hard-refresh the browser.
 
-For Protoss, substitute `skins/protoss` and `css/custom/protoss/protoss.css`.
+Substitute `protoss` or `zerg` for `terran` in both commands to use those.
 Load **one skin at a time** — `webui.custom_css` is an array and listing two
 will cascade them into mush.
 
@@ -83,7 +85,9 @@ labels and badges. Body cells also get tabular figures so uptimes and counters
 align down the column.
 
 Protoss uses the same split, but louder: carved ceremonial capitals for the
-frame against a clean futuristic sans for the data.
+frame against a clean futuristic sans for the data. Zerg puts a gnarled organic
+display face on the frame and keeps a readable angular sans on the data — the
+weirdness lives in the geometry instead, which is what keeps it usable.
 
 Both skins bundle their faces, so this works with no setup and no external
 requests — which matters on an air-gapped NOC box, where a Google Fonts
@@ -128,8 +132,8 @@ python -m http.server 8777
 # then open http://localhost:8777/harness/
 ```
 
-Switch skins with `?skin=terran` / `?skin=protoss`, or the buttons at the top
-of the page.
+Switch skins with `?skin=terran` / `?skin=protoss` / `?skin=zerg`, or the
+buttons at the top of the page.
 
 The harness reproduces LibreNMS's real DOM and loads the real stylesheets in
 the real order from `resources/views/layouts/librenmsv1.blade.php`. Vendored
