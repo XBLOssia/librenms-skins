@@ -19,6 +19,9 @@ of this document is to supply the numbers.
 3. Graph ink **cannot be themed from CSS at all**. RRDtool renders PNGs
    server-side.
 4. There is no theme packaging, distribution, or per-user selection mechanism.
+5. **None of this applies to typography.** A full two-face typographic treatment
+   needed zero workarounds, because core barely specifies `font-family`. The
+   obstacle is not theming — it is 468 hard-coded color literals.
 
 ---
 
@@ -144,7 +147,43 @@ Consolidated, it is plausibly 40–60 real tokens.
 
 ---
 
-## 4. Graphs are a separate, harder problem
+## 4. The control experiment: typography
+
+The claims above would be easy to dismiss as "theming is just hard." It isn't —
+and the same codebase proves it.
+
+While building Terran, the skin was also given a full typographic treatment: two
+faces, one condensed for the application frame (navbar, panel headers, table
+headers, buttons, tabs) and one monospace for the data (device hostnames, table
+body cells, status labels, badges), plus tabular figures throughout the tables.
+
+**Not one of those rules needed a specificity workaround.** No `html.dark`
+prefix, no `!important`, no fighting. Plain class selectors in a stylesheet
+loaded last simply worked, first try.
+
+The reason is visible in the inventory:
+
+| | Color | Typography |
+|---|---|---|
+| Declarations in `tw_dark.css` | 272 hex literals | **0** `font-family` |
+| Declarations in `styles.css` | 331 hex literals | 5 `font-family` |
+| Inline in Blade templates | 595 `tw:` color utilities | ~16 `font-family` |
+
+LibreNMS has essentially **no opinion about typography**, so there is nothing to
+override. It has 468 distinct opinions about color, most of them literals, and
+overriding any of them is a brawl.
+
+This is a clean natural experiment. Same stylesheet, same load order, same
+author, same application, same afternoon. The only variable is whether core
+hard-codes the property. Where it stays out of the way, theming is trivial.
+Where it scatters literals, theming requires defensive CSS that is nowhere
+documented.
+
+The problem is not that theming is hard. The problem is 468 literals.
+
+---
+
+## 5. Graphs are a separate, harder problem
 
 LibreNMS renders RRDtool graphs **server-side to PNG**. CSS variables are
 structurally incapable of touching the ink inside them. A skin can style the
@@ -165,7 +204,7 @@ time.
 
 ---
 
-## 5. No installation story
+## 6. No installation story
 
 - `webui.custom_css[]` is instance-wide. Every user on the instance gets the
   same skin. There is no per-user custom theme.

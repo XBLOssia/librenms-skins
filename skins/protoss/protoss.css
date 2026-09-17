@@ -1,0 +1,713 @@
+/* =============================================================================
+ * PROTOSS — a LibreNMS skin
+ * -----------------------------------------------------------------------------
+ * Golden keratinous armour over a void-dark hull, khaydarin crystal facets, and
+ * psionic blue flame. Angular and chamfered — nothing here is rounded, because
+ * Protoss hardware is grown and cut, not stamped.
+ *
+ * Inspired by Protoss design language; all artwork is original CSS (gradients,
+ * clip-paths, shadows, generated geometry). No Blizzard assets are used or
+ * redistributed.
+ *
+ * REQUIREMENTS
+ *   Set your site style to "dark" first. This skin is an *overlay* on the
+ *   stock dark theme (html/css/tw_dark.css), not a replacement for it.
+ *     Preferences -> Theme -> Dark
+ *
+ * INSTALL
+ *   cp protoss.css /opt/librenms/html/css/custom/
+ *   lnms config:set webui.custom_css '["css/custom/protoss.css"]'
+ *
+ * FONTS
+ *   This skin leans harder on typography than Terran does, and its faces have
+ *   weak system fallbacks. Without a webfont it degrades to Georgia + Segoe UI
+ *   and loses most of its character. See FONTS.md — self-hosting is a two-step
+ *   job and is strongly recommended here.
+ *
+ * WHY EVERY RULE IS PREFIXED `html.dark`
+ *   tw_dark.css styles the dark theme with `.dark .thing` (specificity 0,2,0).
+ *   A custom_css file loads after it, but source order only breaks ties at
+ *   EQUAL specificity — so bare `.thing` (0,1,0) silently loses. `html.dark`
+ *   yields (0,2,1), which beats it without reaching for !important.
+ *   Where !important IS used below, it is always marked with a [!] note
+ *   explaining which upstream rule forced it. See docs/FINDINGS.md.
+ *
+ * Verified against LibreNMS master @ 63e0394 (2026-09-17).
+ * ============================================================================= */
+
+/* -----------------------------------------------------------------------------
+ * 1. TOKENS
+ * The entire skin is driven by the variables below. Retheming means editing
+ * this block and nothing else.
+ * -------------------------------------------------------------------------- */
+:root {
+  /* Void & hull — deep blue-black, never neutral grey */
+  --pr-void:          #05080f;
+  --pr-hull:          #0a1120;   /* page background                          */
+  --pr-panel:         #0f1a2e;   /* panel body                               */
+  --pr-panel-raised:  #152541;   /* panel header, raised surfaces            */
+  --pr-panel-hi:      #1d3459;   /* hover / active                           */
+  --pr-edge:          #2a4570;   /* structural seams                         */
+
+  /* Keratinous armour — warm gold, the Protoss exoskeleton */
+  --pr-gold:          #e3b341;
+  --pr-gold-bright:   #ffdc8a;
+  --pr-gold-deep:     #8a6716;
+  --pr-gold-shadow:   #50390a;
+
+  /* Psionic energy — blue flame */
+  --pr-psi:           #3fb8f5;
+  --pr-psi-bright:    #9adcff;
+  --pr-psi-deep:      #0a2a45;
+  --pr-psi-glow:      rgba(63, 184, 245, .45);
+
+  /* Khaydarin crystal — violet, used sparingly for accent facets */
+  --pr-crystal:       #a98bf5;
+  --pr-crystal-deep:  #241a47;
+
+  /* Status */
+  --pr-ok:            #3ad6a8;   /* shield teal                              */
+  --pr-ok-deep:       #0a3830;
+  --pr-warn:          #f0a92c;
+  --pr-warn-deep:     #3d2a06;
+  --pr-danger:        #ff5c7a;   /* psionic magenta-red                      */
+  --pr-danger-deep:   #3d0f22;
+
+  /* Text */
+  --pr-text:          #c6d5ea;
+  --pr-text-dim:      #8ba0bf;
+  --pr-text-mute:     #5f7391;
+  --pr-text-bright:   #f0f7ff;
+
+  /* Geometry — chamfers, not radii */
+  --pr-radius:        0;
+  --pr-chamfer:       9px;       /* corner cut depth                         */
+  --pr-glow-soft:     0 0 14px var(--pr-psi-glow);
+  --pr-glow-gold:     0 0 12px rgba(227, 179, 65, .35);
+  --pr-inset:         inset 0 1px 0 rgba(255, 255, 255, .05),
+                      inset 0 -1px 0 rgba(0, 0, 0, .45);
+
+  /* Generated textures */
+  --pr-facets: repeating-linear-gradient(
+      115deg,
+      transparent 0 34px,
+      rgba(63, 184, 245, .035) 34px 35px);
+  --pr-gold-leaf: linear-gradient(
+      180deg,
+      var(--pr-gold-bright) 0%,
+      var(--pr-gold)        42%,
+      var(--pr-gold-deep)   100%);
+
+  /* Typography — see FONTS.md.
+     --pr-font-chrome  ancient ceremonial caps: navbar, headers, buttons, tabs.
+                       The Khalai-inscription voice.
+     --pr-font-data    futuristic but readable: hostnames, cells, labels.
+     --pr-font-code    monospace, for code blocks only. */
+  --pr-font-chrome: "Cinzel", "Trajan Pro", "Optima", "Palatino Linotype",
+                    "Georgia", serif;
+  --pr-font-data:   "Rajdhani", "Exo 2", "Titillium Web", "Segoe UI",
+                    system-ui, sans-serif;
+  --pr-font-code:   "Space Mono", "JetBrains Mono", "Consolas",
+                    ui-monospace, monospace;
+}
+
+/* -----------------------------------------------------------------------------
+ * 1b. SELF-HOSTED WEBFONT (strongly recommended — see FONTS.md)
+ *
+ * Font files in html/css/custom/ ARE served: LibreNMS's rewrite to index.php is
+ * guarded by `RewriteCond %{REQUEST_FILENAME} !-f`, so existing files bypass it.
+ * That directory is gitignored upstream, so fonts survive updates.
+ *
+ * @font-face {
+ *   font-family: "Protoss Chrome";
+ *   src: url("Cinzel-SemiBold.woff2") format("woff2");
+ *   font-weight: 600; font-display: swap;
+ * }
+ * @font-face {
+ *   font-family: "Protoss Data";
+ *   src: url("Rajdhani-Medium.woff2") format("woff2");
+ *   font-weight: 500; font-display: swap;
+ * }
+ * @font-face {
+ *   font-family: "Protoss Data";
+ *   src: url("Rajdhani-Bold.woff2") format("woff2");
+ *   font-weight: 700; font-display: swap;
+ * }
+ * :root {
+ *   --pr-font-chrome: "Protoss Chrome", "Georgia", serif;
+ *   --pr-font-data:   "Protoss Data", "Segoe UI", system-ui, sans-serif;
+ * }
+ * -------------------------------------------------------------------------- */
+
+/* -----------------------------------------------------------------------------
+ * 2. THE VOID — page background
+ * -------------------------------------------------------------------------- */
+html.dark,
+html.dark body {
+  background-color: var(--pr-hull);
+  color: var(--pr-text);
+  font-family: var(--pr-font-data);
+}
+
+/* Faint crystalline facets across the void, plus a warm rise at the horizon. */
+html.dark body {
+  background-image:
+    var(--pr-facets),
+    radial-gradient(ellipse 120% 60% at 50% 0%,
+      rgba(63, 184, 245, .07) 0%, transparent 70%),
+    linear-gradient(180deg, var(--pr-void) 0%, var(--pr-hull) 520px);
+  background-attachment: fixed;
+}
+
+html.dark a {
+  color: var(--pr-psi);
+  transition: color .15s ease, text-shadow .15s ease;
+}
+html.dark a:hover,
+html.dark a:focus {
+  color: var(--pr-psi-bright);
+  text-shadow: 0 0 10px var(--pr-psi-glow);
+  text-decoration: none;
+}
+
+html.dark hr {
+  border: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent, var(--pr-gold-deep) 20%, var(--pr-gold-deep) 80%, transparent);
+}
+
+/* -----------------------------------------------------------------------------
+ * 3. THE NEXUS — top navbar
+ * A band of gold armour over the void, lit from beneath by psionic energy.
+ * -------------------------------------------------------------------------- */
+html.dark .navbar-default {
+  background-color: var(--pr-panel-raised);
+  background-image: linear-gradient(180deg, #1a2d4e 0%, #0d1830 100%);
+  border: 0;
+  border-bottom: 1px solid var(--pr-gold-deep);
+  box-shadow: 0 1px 0 0 rgba(227, 179, 65, .25),
+              0 8px 26px rgba(0, 0, 0, .65);
+  position: relative;
+}
+
+/* Gold leaf capping the top edge of the armour band. */
+html.dark .navbar-default::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: 2px;
+  background: var(--pr-gold-leaf);
+  opacity: .9;
+  pointer-events: none;
+}
+
+/* Psionic underglow — the blue flame beneath the plate. */
+html.dark .navbar-default::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%, var(--pr-psi) 18%, var(--pr-psi-bright) 50%,
+    var(--pr-psi) 82%, transparent 100%);
+  box-shadow: 0 0 12px var(--pr-psi-glow);
+  pointer-events: none;
+}
+
+html.dark .navbar-default .navbar-brand {
+  color: var(--pr-gold-bright);
+  font-family: var(--pr-font-chrome);
+  font-weight: 600;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  text-shadow: 0 0 16px rgba(227, 179, 65, .5);
+}
+
+html.dark .navbar-default .navbar-nav > li > a {
+  color: var(--pr-text-dim);
+  font-family: var(--pr-font-chrome);
+  font-size: 13px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  transition: color .15s ease, background-color .15s ease;
+}
+
+html.dark .navbar-default .navbar-nav > li > a:hover,
+html.dark .navbar-default .navbar-nav > li > a:focus,
+html.dark .navbar-default .navbar-nav > .open > a,
+html.dark .navbar-default .navbar-nav > .open > a:hover,
+html.dark .navbar-default .navbar-nav > .open > a:focus {
+  background-color: rgba(63, 184, 245, .1);
+  color: var(--pr-gold-bright);
+  box-shadow: inset 0 -2px 0 0 var(--pr-psi),
+              inset 0 -12px 18px -12px var(--pr-psi-glow);
+}
+
+html.dark .fa-nav-icons { color: var(--pr-text-mute); }
+html.dark .navbar-nav > li > a:hover .fa-nav-icons,
+html.dark .navbar-nav > .open > a .fa-nav-icons {
+  color: var(--pr-psi-bright);
+  text-shadow: 0 0 9px var(--pr-psi-glow);
+}
+html.dark .icon-theme { color: var(--pr-text-dim); }
+
+/* Dropdowns — crystal slabs with a gold cap */
+html.dark .navbar-default .dropdown-menu,
+html.dark .dropdown-menu {
+  background-color: var(--pr-panel);
+  background-image: linear-gradient(180deg, #14233d 0%, #0b1526 100%);
+  border: 1px solid var(--pr-edge);
+  border-top: 2px solid var(--pr-gold);
+  border-radius: var(--pr-radius);
+  box-shadow: 0 14px 38px rgba(0, 0, 0, .8), var(--pr-glow-gold);
+  padding: 3px 0;
+}
+
+html.dark .dropdown-menu > li > a {
+  color: var(--pr-text-dim);
+  font-family: var(--pr-font-data);
+  font-weight: 500;
+  letter-spacing: .05em;
+  padding: 6px 18px;
+  border-left: 2px solid transparent;
+  transition: all .13s ease;
+}
+
+html.dark .dropdown-menu > li > a:hover,
+html.dark .dropdown-menu > li > a:focus {
+  background-color: rgba(63, 184, 245, .12);
+  color: var(--pr-text-bright);
+  border-left-color: var(--pr-psi);
+  padding-left: 22px;
+}
+
+html.dark .dropdown-menu .divider {
+  background: linear-gradient(90deg, transparent, var(--pr-edge), transparent);
+}
+html.dark .dropdown-header {
+  color: var(--pr-gold);
+  font-family: var(--pr-font-chrome);
+  text-transform: uppercase;
+  letter-spacing: .18em;
+  font-size: 10px;
+}
+
+/* -----------------------------------------------------------------------------
+ * 4. ARMOUR PLATING — panels
+ * Chamfered corners are drawn with gold corner brackets rather than clip-path,
+ * so dropdowns and overflow inside a panel are never clipped.
+ * -------------------------------------------------------------------------- */
+html.dark .panel,
+html.dark .panel-default {
+  background-color: var(--pr-panel);
+  border: 1px solid var(--pr-edge);
+  border-radius: var(--pr-radius);
+  box-shadow: var(--pr-inset), 0 4px 18px rgba(0, 0, 0, .5);
+  position: relative;
+}
+
+/* Gold bracket, top-left and bottom-right — the Protoss framing motif. */
+html.dark .panel::before,
+html.dark .panel::after {
+  content: "";
+  position: absolute;
+  width: var(--pr-chamfer);
+  height: var(--pr-chamfer);
+  pointer-events: none;
+  z-index: 2;
+}
+html.dark .panel::before {
+  top: -1px; left: -1px;
+  border-top: 2px solid var(--pr-gold);
+  border-left: 2px solid var(--pr-gold);
+}
+html.dark .panel::after {
+  bottom: -1px; right: -1px;
+  border-bottom: 2px solid var(--pr-gold);
+  border-right: 2px solid var(--pr-gold);
+}
+
+html.dark .panel-default > .panel-heading,
+html.dark .panel > .panel-heading {
+  background-color: var(--pr-panel-raised);
+  background-image: linear-gradient(180deg,
+    rgba(227, 179, 65, .12) 0%, rgba(21, 37, 65, .9) 55%, var(--pr-panel) 100%);
+  border-bottom: 1px solid var(--pr-gold-deep);
+  border-radius: 0;
+  color: var(--pr-gold-bright);
+  font-family: var(--pr-font-chrome);
+  font-weight: 600;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  position: relative;
+  padding-left: 18px;
+  text-shadow: 0 0 12px rgba(227, 179, 65, .3);
+}
+
+/* Psionic filament down the leading edge of every header. */
+html.dark .panel-default > .panel-heading::before,
+html.dark .panel > .panel-heading::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 20%; bottom: 20%;
+  width: 3px;
+  background: linear-gradient(180deg,
+    transparent, var(--pr-psi-bright), var(--pr-psi), transparent);
+  box-shadow: 0 0 10px var(--pr-psi-glow);
+}
+
+html.dark .panel-title,
+html.dark .panel-heading .panel-title a,
+html.dark .panel-default > .panel-heading .icon-theme,
+html.dark .panel-default > .panel-heading a:link,
+html.dark .panel-default > .panel-heading a:visited {
+  color: var(--pr-gold-bright);
+}
+
+html.dark .panel-body { background-color: transparent; color: var(--pr-text); }
+
+html.dark .panel-footer {
+  background-color: rgba(5, 8, 15, .5);
+  border-top: 1px solid var(--pr-edge);
+  color: var(--pr-text-dim);
+}
+
+html.dark .widget-header {
+  background-image: linear-gradient(180deg,
+    rgba(227, 179, 65, .12) 0%, rgba(21, 37, 65, .9) 100%);
+  color: var(--pr-gold-bright);
+  font-family: var(--pr-font-chrome);
+  text-transform: uppercase;
+  letter-spacing: .14em;
+}
+
+/* -----------------------------------------------------------------------------
+ * 5. READOUTS — tables
+ * -------------------------------------------------------------------------- */
+html.dark .table,
+html.dark .table > tbody > tr > td,
+html.dark .table > tbody > tr > th,
+html.dark .table > thead > tr > td,
+html.dark .table > thead > tr > th {
+  border-color: rgba(63, 184, 245, .1);
+  color: var(--pr-text);
+}
+
+html.dark .table > thead > tr > th {
+  background-color: rgba(5, 8, 15, .55);
+  border-bottom: 1px solid var(--pr-gold-deep);
+  color: var(--pr-gold);
+  font-family: var(--pr-font-chrome);
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+
+/* Body cells: the futuristic face, with tabular figures so uptimes and
+   counters align down the column. */
+html.dark .table > tbody > tr > td {
+  font-family: var(--pr-font-data);
+  font-size: 13.5px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+html.dark .table-striped > tbody > tr:nth-of-type(odd)  { background-color: rgba(63, 184, 245, .028); }
+html.dark .table-striped > tbody > tr:nth-of-type(even) { background-color: transparent; }
+
+html.dark .table-hover > tbody > tr:hover,
+html.dark .table-hover > tbody > tr:hover > td {
+  background-color: rgba(63, 184, 245, .09);
+  box-shadow: inset 3px 0 0 0 var(--pr-psi);
+}
+
+html.dark .bootgrid-header,
+html.dark .bootgrid-footer {
+  background-color: var(--pr-panel-raised);
+  border-color: var(--pr-edge);
+  color: var(--pr-text-dim);
+}
+html.dark .bootgrid-table th { color: var(--pr-gold); }
+html.dark .bootgrid-table td { color: var(--pr-text); }
+
+/* -----------------------------------------------------------------------------
+ * 6. CONTROLS — buttons
+ * Chamfered with clip-path. Safe here: buttons never contain overflowing
+ * children, unlike panels.
+ *
+ * [!] The .lnms-btn-* classes in resources/css/app.css are built with
+ *     `@apply ... tw:text-white!`, which compiles to `!important` on an
+ *     unlayered rule. No specificity beats that, so a skin must answer with
+ *     !important of its own. See docs/FINDINGS.md section 2.
+ * -------------------------------------------------------------------------- */
+html.dark .btn {
+  border-radius: var(--pr-radius);
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px),
+                     calc(100% - 8px) 100%, 0 100%, 0 8px);
+  font-family: var(--pr-font-chrome);
+  font-size: 12px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  border-width: 1px;
+  transition: filter .15s ease, box-shadow .15s ease;
+}
+html.dark .btn:hover  { filter: brightness(1.22); }
+html.dark .btn:active { filter: brightness(.88); }
+
+html.dark .btn-default,
+html.dark .lnms-btn-default {
+  background-color: var(--pr-panel-raised) !important;
+  background-image: linear-gradient(180deg, #1c3055 0%, #101d34 100%) !important;
+  border-color: var(--pr-edge) !important;
+  color: var(--pr-text) !important;
+}
+html.dark .btn-default:hover,
+html.dark .lnms-btn-default:hover {
+  box-shadow: var(--pr-glow-soft), inset 0 0 14px rgba(63, 184, 245, .18) !important;
+}
+
+html.dark .btn-primary,
+html.dark .lnms-btn-primary {
+  background-color: #17557d !important;
+  background-image: linear-gradient(180deg, #1e6d9e 0%, #0f4364 100%) !important;
+  border-color: var(--pr-psi) !important;
+  color: var(--pr-text-bright) !important;
+  box-shadow: var(--pr-glow-soft) !important;
+}
+
+html.dark .btn-success,
+html.dark .lnms-btn-success {
+  background-color: #17705c !important;
+  background-image: linear-gradient(180deg, #1d8b72 0%, #0e5445 100%) !important;
+  border-color: var(--pr-ok) !important;
+  color: var(--pr-text-bright) !important;
+}
+
+html.dark .btn-danger,
+html.dark .lnms-btn-danger {
+  background-color: #8e1f38 !important;
+  background-image: linear-gradient(180deg, #b32949 0%, #6b162a 100%) !important;
+  border-color: var(--pr-danger) !important;
+  color: #fff !important;
+  box-shadow: 0 0 14px rgba(255, 92, 122, .35) !important;
+}
+
+html.dark .btn-warning,
+html.dark .lnms-btn-warning {
+  background-color: var(--pr-gold-deep) !important;
+  background-image: var(--pr-gold-leaf) !important;
+  border-color: var(--pr-gold-bright) !important;
+  color: #2a1f04 !important;
+  box-shadow: var(--pr-glow-gold) !important;
+}
+
+/* -----------------------------------------------------------------------------
+ * 7. INPUTS — recessed crystal slots
+ * -------------------------------------------------------------------------- */
+html.dark .form-control,
+html.dark input[type="text"],
+html.dark input[type="password"],
+html.dark input[type="number"],
+html.dark input[type="search"],
+html.dark textarea,
+html.dark select {
+  background-color: rgba(5, 8, 15, .7);
+  border: 1px solid var(--pr-edge);
+  border-radius: var(--pr-radius);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, .6);
+  color: var(--pr-text);
+  font-family: var(--pr-font-data);
+  font-weight: 500;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+html.dark .form-control:focus {
+  border-color: var(--pr-psi);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, .6), var(--pr-glow-soft);
+  outline: 0;
+}
+
+html.dark .form-control::placeholder { color: var(--pr-text-mute); }
+
+html.dark .input-group-addon {
+  background-color: var(--pr-panel-raised);
+  border-color: var(--pr-edge);
+  color: var(--pr-gold);
+}
+
+/* -----------------------------------------------------------------------------
+ * 8. STATUS — alerts, labels, badges
+ * -------------------------------------------------------------------------- */
+html.dark .alert {
+  border-radius: var(--pr-radius);
+  border-width: 1px 1px 1px 3px;
+  font-family: var(--pr-font-data);
+  font-weight: 500;
+  letter-spacing: .02em;
+  box-shadow: var(--pr-inset);
+}
+
+html.dark .alert-danger {
+  background-color: var(--pr-danger-deep);
+  border-color: var(--pr-edge) var(--pr-edge) var(--pr-edge) var(--pr-danger);
+  color: #ffb3c2;
+  box-shadow: var(--pr-inset), inset 14px 0 22px -16px rgba(255, 92, 122, .8);
+}
+html.dark .alert-success {
+  background-color: var(--pr-ok-deep);
+  border-color: var(--pr-edge) var(--pr-edge) var(--pr-edge) var(--pr-ok);
+  color: #8ae8cd;
+  box-shadow: var(--pr-inset), inset 14px 0 22px -16px rgba(58, 214, 168, .7);
+}
+html.dark .alert-warning {
+  background-color: var(--pr-warn-deep);
+  border-color: var(--pr-edge) var(--pr-edge) var(--pr-edge) var(--pr-gold);
+  color: #f5cf85;
+  box-shadow: var(--pr-inset), inset 14px 0 22px -16px rgba(227, 179, 65, .7);
+}
+html.dark .alert-info {
+  background-color: var(--pr-psi-deep);
+  border-color: var(--pr-edge) var(--pr-edge) var(--pr-edge) var(--pr-psi);
+  color: #a8dcf7;
+  box-shadow: var(--pr-inset), inset 14px 0 22px -16px var(--pr-psi-glow);
+}
+
+/* Status bugs — chamfered crystal chips */
+html.dark .label,
+html.dark .badge {
+  border-radius: var(--pr-radius);
+  clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px),
+                     calc(100% - 5px) 100%, 0 100%, 0 5px);
+  font-family: var(--pr-font-data);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  padding: .28em .7em;
+}
+
+html.dark .label-danger,  html.dark .badge-danger  { background-color: #a32546; color: #fff; }
+html.dark .label-success, html.dark .badge-success { background-color: #14705b; color: #d6fff2; }
+html.dark .label-warning, html.dark .badge-warning { background-color: var(--pr-gold-deep); color: var(--pr-gold-bright); }
+html.dark .label-info,    html.dark .badge-info    { background-color: #15567d; color: #cdeeff; }
+html.dark .label-default, html.dark .badge-default { background-color: var(--pr-panel-hi); color: var(--pr-text-dim); }
+
+/* Notification counter — a psionic mote */
+html.dark .badge-navbar-user.badge-danger {
+  background-color: var(--pr-danger);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(255, 92, 122, .8);
+  animation: pr-pulse 3s ease-in-out infinite;
+}
+
+@keyframes pr-pulse {
+  0%, 100% { box-shadow: 0 0 7px  rgba(255, 92, 122, .5); }
+  50%      { box-shadow: 0 0 16px rgba(255, 92, 122, .95); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.dark .badge-navbar-user.badge-danger { animation: none; }
+}
+
+/* Device state links.
+   [!] .device-link-down ships `tw:dark:text-red-500!` from app.css. */
+html.dark .device-link-up,
+html.dark .device-link-down,
+html.dark .device-link-disabled {
+  font-family: var(--pr-font-data);
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: .02em;
+}
+
+html.dark .device-link-up   { color: var(--pr-ok) !important; }
+html.dark .device-link-down {
+  color: var(--pr-danger) !important;
+  text-shadow: 0 0 11px rgba(255, 92, 122, .5);
+}
+html.dark .device-link-disabled { color: var(--pr-text-mute) !important; }
+
+/* -----------------------------------------------------------------------------
+ * 9. CHROME — progress, tabs, modals, wells
+ * -------------------------------------------------------------------------- */
+html.dark .pace .pace-progress {
+  background: linear-gradient(90deg, var(--pr-psi), var(--pr-gold));
+}
+html.dark .pace .pace-progress-inner {
+  box-shadow: 0 0 12px var(--pr-psi), 0 0 6px var(--pr-psi-bright);
+}
+html.dark .pace .pace-activity {
+  border-top-color: var(--pr-psi);
+  border-left-color: var(--pr-gold);
+}
+
+html.dark .pagemenu-selected {
+  background-color: rgba(63, 184, 245, .14);
+  box-shadow: inset 0 -2px 0 0 var(--pr-psi);
+}
+
+html.dark .well {
+  background-color: rgba(5, 8, 15, .5);
+  border: 1px solid var(--pr-edge);
+  border-radius: var(--pr-radius);
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, .55);
+}
+
+html.dark .nav-tabs {
+  border-bottom-color: var(--pr-gold-deep);
+}
+html.dark .nav-tabs > li > a {
+  color: var(--pr-text-dim);
+  border-radius: 0;
+  font-family: var(--pr-font-chrome);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+html.dark .nav-tabs > li.active > a,
+html.dark .nav-tabs > li.active > a:hover,
+html.dark .nav-tabs > li.active > a:focus {
+  background-color: var(--pr-panel);
+  border-color: var(--pr-edge);
+  border-bottom-color: transparent;
+  border-top: 2px solid var(--pr-gold);
+  color: var(--pr-gold-bright);
+}
+
+html.dark .modal-content {
+  background-color: var(--pr-panel);
+  border: 1px solid var(--pr-edge);
+  border-top: 2px solid var(--pr-gold);
+  border-radius: var(--pr-radius);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, .85), var(--pr-glow-gold);
+}
+html.dark .modal-header,
+html.dark .modal-footer { border-color: var(--pr-edge); }
+
+html.dark pre,
+html.dark code {
+  background-color: rgba(5, 8, 15, .75);
+  border: 1px solid var(--pr-edge);
+  border-left: 2px solid var(--pr-psi);
+  border-radius: var(--pr-radius);
+  color: var(--pr-psi-bright);
+  font-family: var(--pr-font-code);
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, .5);
+}
+
+/* -----------------------------------------------------------------------------
+ * 10. GRAPHS
+ * RRDtool renders graphs server-side to PNG using colours from PHP, not CSS.
+ * Nothing here can change the ink inside a graph — see docs/FINDINGS.md.
+ * -------------------------------------------------------------------------- */
+html.dark .graph-image,
+html.dark img.graph-image {
+  background-color: #fff;
+  border: 1px solid var(--pr-edge);
+  border-radius: var(--pr-radius);
+  box-shadow: var(--pr-inset);
+}

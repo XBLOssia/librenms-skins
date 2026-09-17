@@ -15,22 +15,22 @@ asset ports.
 | Skin | State | Notes |
 |---|---|---|
 | Terran | Working | Gunmetal plating, hazard striping, red LEDs, green phosphor |
-| Protoss | Planned | Gold-on-blue crystalline, energy glow |
+| Protoss | Working | Gold armour on void-blue, khaydarin facets, psionic flame |
 | Zerg | Planned | Organic carapace, purple-brown, creep textures |
 
 Verified against LibreNMS master @ `63e0394` (2026-09-17).
 
 ---
 
-## Install (Terran)
+## Install
 
-Terran is an **overlay on the stock dark theme**, not a replacement for it.
+Every skin is an **overlay on the stock dark theme**, not a replacement for it.
 Set your theme to Dark first, or the skin will render on a light base and look
 broken.
 
 1. Set your site style to dark — *Preferences → Theme → Dark*.
 
-2. Copy the skin into the update-safe custom CSS directory:
+2. Copy one skin into the update-safe custom CSS directory:
 
 ```bash
 cp skins/terran/terran.css /opt/librenms/html/css/custom/
@@ -43,6 +43,14 @@ lnms config:set webui.custom_css '["css/custom/terran.css"]'
 ```
 
 4. Hard-refresh the browser.
+
+For Protoss, substitute `skins/protoss/protoss.css` and
+`css/custom/protoss.css`. Load **one skin at a time** — `webui.custom_css` is an
+array and listing two will cascade them into mush.
+
+> `webui.custom_css` is instance-wide. Every user on the instance gets the same
+> skin; LibreNMS has no per-user custom theme selection. See
+> [docs/FINDINGS.md](docs/FINDINGS.md) §6.
 
 `html/css/custom/` is gitignored by LibreNMS, so the skin survives `./daily.sh`
 updates. Nothing in LibreNMS core is modified.
@@ -69,9 +77,14 @@ navbar, panel headers, table headers, buttons — and `--tn-font-data`
 labels and badges. Body cells also get tabular figures so uptimes and counters
 align down the column.
 
-It works with system fonts and no setup. To self-host a real webfont — which
-does work, and survives updates — see
-[`skins/terran/FONTS.md`](skins/terran/FONTS.md).
+Protoss uses the same split, but louder: carved ceremonial capitals for the
+frame against a clean futuristic sans for the data.
+
+Terran works fine on system fonts. **Protoss really wants its webfonts** — its
+character lives in the typography, and both faces fall back to ordinary system
+fonts. Self-hosting works and survives updates:
+[`skins/terran/FONTS.md`](skins/terran/FONTS.md) ·
+[`skins/protoss/FONTS.md`](skins/protoss/FONTS.md).
 
 ---
 
@@ -108,6 +121,9 @@ You can preview and verify a skin without a LibreNMS install.
 python -m http.server 8777
 # then open http://localhost:8777/harness/
 ```
+
+Switch skins with `?skin=terran` / `?skin=protoss`, or the buttons at the top
+of the page.
 
 The harness reproduces LibreNMS's real DOM and loads the real stylesheets in
 the real order from `resources/views/layouts/librenmsv1.blade.php`. Vendored

@@ -18,6 +18,11 @@ for f in bootstrap.min.css styles.css tw_dark.css fontawesome.min.css; do
   cp -v "$SRC/html/css/$f" "$DEST/"
 done
 
+# fontawesome.min.css references ../webfonts/, relative to harness/css/ -
+# without these the nav icons render as empty boxes.
+mkdir -p "$DEST/../webfonts"
+cp -v "$SRC"/html/webfonts/*.woff2 "$SRC"/html/webfonts/*.ttf "$DEST/../webfonts/"
+
 echo
 echo "Done. Now run:  python -m http.server 8777"
 echo "Then open:      http://localhost:8777/harness/"

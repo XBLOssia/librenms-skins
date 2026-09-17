@@ -1,3 +1,4 @@
-# LibreNMS stylesheets vendored for the harness - GPLv3, not redistributed here.
+# LibreNMS assets vendored for the harness - GPLv3, not redistributed here.
 # Populate with: ./harness/sync-css.sh /path/to/librenms
 harness/css/
+harness/webfonts/
