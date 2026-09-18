@@ -16,14 +16,26 @@ Run `./scripts/coverage.sh /opt/librenms` for the current number. As of today:
 
 | Skin | Coverage |
 |---|---|
-| Terran | 92 / 92 components (100%) |
-| Protoss | 92 / 92 (100%) |
-| Zerg | 92 / 92 (100%) |
+| Terran | 184 / 215 (85%) |
+| Protoss | 184 / 215 (85%) |
+| Zerg | 184 / 215 (85%) |
 
-The denominator is every component `tw_dark.css` gives dark-mode treatment to.
-That file is the closest thing LibreNMS has to a manifest of "things that need
-theming" — if upstream bothered to style it, a skin that ignores it will show
-stock dark-theme colours sitting in the middle of the skin.
+There are **two** denominators, and using only the first hid a real gap for
+several rounds:
+
+- **A — `tw_dark.css` (92):** components upstream gives dark-mode treatment.
+  All three skins cover 92/92.
+- **B — `styles.css` (123):** colour-bearing classes `tw_dark.css` *never*
+  overrides, so they render identically in light and dark. Skins cover 92/123.
+
+Measuring against A alone reported **100%** while the navbar search dropdown was
+`#fff`, device-overview rows were `#f9f9f9`, and the availability map boxes were
+stock Bootstrap. `scripts/coverage.sh` now reports both.
+
+The ~31 still uncovered in B are overwhelmingly dead Observium-era classes
+(`.datacell`, `.body-1`, `.shadetabs`, `.dropdown_3columns`) with zero
+references in `resources/views`. Deliberately not chased; run
+`coverage.sh <path> <skin> -v` to see them.
 
 All three sit at the same number because they share structure. Fix a gap in one
 and the same gap exists in the other two; the work is parallel by construction.

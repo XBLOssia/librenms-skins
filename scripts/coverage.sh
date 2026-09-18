@@ -1,66 +1,101 @@
 #!/usr/bin/env bash
-# Report which components LibreNMS's dark theme styles that the skins do not.
-#
-# tw_dark.css is the closest thing to a manifest of "things that need theming":
-# if upstream bothered to give a component dark-mode treatment, a skin that
-# ignores it will show stock dark-theme colours sitting in the middle of the
-# skin. This finds those gaps.
+# Report which colour-bearing components the skins do not style.
 #
 #   ./scripts/coverage.sh /opt/librenms
 #   ./scripts/coverage.sh /opt/librenms zerg     # single skin
+#   ./scripts/coverage.sh /opt/librenms zerg -v  # list the misses
 #
-# Exit status is 0 always - this is a report, not a gate.
+# TWO DENOMINATORS, because the first one alone hid a real gap for a while:
+#
+#   tw_dark.css   components upstream gives dark-mode treatment. Ignoring one
+#                 means stock dark colours sitting inside the skin.
+#   styles.css    colour-bearing classes that tw_dark.css NEVER overrides, so
+#                 they render identically in light and dark. Measuring only
+#                 against tw_dark.css reported 100% while ~112 of these were
+#                 untouched — including the navbar search dropdown (#fff), the
+#                 availability map boxes, and several pale pastel row
+#                 backgrounds that only make sense on a light background.
+#
+# Exit status is always 0 - this is a report, not a gate.
 
 set -uo pipefail
 
 SRC="${1:-/opt/librenms}"
 ONLY="${2:-}"
+VERBOSE="${3:-}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TW="$SRC/html/css/tw_dark.css"
+ST="$SRC/html/css/styles.css"
 
-if [ ! -f "$TW" ]; then
-  echo "error: $TW not found - pass the path to a LibreNMS checkout" >&2
-  echo "usage: $0 /path/to/librenms [skin]" >&2
+case "${ONLY}" in -v|--verbose) VERBOSE="-v"; ONLY="" ;; esac
+
+if [ ! -f "$TW" ] || [ ! -f "$ST" ]; then
+  echo "error: need $TW and $ST - pass the path to a LibreNMS checkout" >&2
+  echo "usage: $0 /path/to/librenms [skin] [-v]" >&2
   exit 1
 fi
 
-if [ -n "$ONLY" ]; then
-  skins="$ONLY"
-else
-  skins="terran protoss zerg"
-fi
+[ -n "$ONLY" ] && skins="$ONLY" || skins="terran protoss zerg"
 
-# Distinct component selectors that tw_dark.css targets.
-components=$(grep -ohE '\.dark [.#][a-zA-Z0-9_-]+' "$TW" | sed 's/^\.dark //' | awk '!seen[$0]++')
-total=$(printf '%s\n' "$components" | grep -c .)
+# Group A: components tw_dark.css themes.
+group_a=$(grep -ohE '\.dark [.#][a-zA-Z0-9_-]+' "$TW" | sed 's/^\.dark //' | awk '!s[$0]++')
 
-echo "LibreNMS dark-theme components: $total"
-echo "Source: $TW"
+# Group B: colour-bearing classes in styles.css that tw_dark.css never touches.
+# The pipe must sit on the command line BEFORE the heredoc body, not after the
+# terminator. python3 on Windows emits CRLF, and a trailing \r makes every
+# later `grep -F` miss silently - which is exactly how this whole group went
+# unnoticed in the first place.
+group_b=$(python3 - "$ST" "$TW" <<'PYEOF' | tr -d '\r'
+import re, sys
+st = open(sys.argv[1], encoding='utf-8', errors='replace').read()
+tw = open(sys.argv[2], encoding='utf-8', errors='replace').read()
+cls = set()
+for m in re.finditer(r'(^|\})\s*([^{}@]+)\{([^}]*)\}', st, re.M):
+    if re.search(r'\b(background-color|background|color|border-color)\s*:\s*#', m.group(3)):
+        cls.update('.' + c for c in re.findall(r'\.([a-zA-Z][\w-]+)', m.group(2)))
+tw_cls = {'.' + c for c in re.findall(r'\.dark [^{]*?\.([a-zA-Z][\w-]+)', tw)}
+print('\n'.join(sorted(cls - tw_cls)))
+PYEOF
+)
+
+count() { printf '%s\n' "$1" | grep -c . ; }
+a_total=$(count "$group_a")
+b_total=$(count "$group_b")
+
+echo "Denominators"
+printf '  A  tw_dark.css themed components            %4d\n' "$a_total"
+printf '  B  styles.css colour classes tw_dark skips  %4d\n' "$b_total"
+printf '     total                                    %4d\n' "$((a_total + b_total))"
 echo
 
 for skin in $skins; do
   css="$ROOT/skins/$skin/$skin.css"
   if [ ! -f "$css" ]; then
-    echo "$skin: no stylesheet at $css - skipping"
-    continue
+    echo "$skin: no stylesheet at $css - skipping"; continue
   fi
 
-  missing=""
-  n=0
+  miss_a=""; miss_b=""; na=0; nb=0
   while read -r c; do
     [ -z "$c" ] && continue
-    if ! grep -qF -- "$c" "$css"; then
-      missing="$missing $c"
-      n=$((n + 1))
-    fi
-  done <<< "$components"
+    grep -qF -- "$c" "$css" || { miss_a="$miss_a $c"; na=$((na+1)); }
+  done <<< "$group_a"
+  while read -r c; do
+    [ -z "$c" ] && continue
+    grep -qF -- "$c" "$css" || { miss_b="$miss_b $c"; nb=$((nb+1)); }
+  done <<< "$group_b"
 
-  covered=$((total - n))
-  pct=$((covered * 100 / total))
-  printf '%-9s %3d/%-3d covered (%d%%)\n' "$skin" "$covered" "$total" "$pct"
+  cov_a=$((a_total - na)); cov_b=$((b_total - nb))
+  tot=$((a_total + b_total)); cov=$((cov_a + cov_b))
+  printf '%-9s %3d/%-3d (%3d%%)   A %3d/%-3d   B %3d/%-3d\n' \
+    "$skin" "$cov" "$tot" "$((cov * 100 / tot))" "$cov_a" "$a_total" "$cov_b" "$b_total"
 
-  if [ "$n" -gt 0 ]; then
-    printf '%s\n' $missing | awk '{printf "            %s\n", $0}'
+  if [ "$VERBOSE" = "-v" ]; then
+    [ -n "$miss_a" ] && { echo "    missing (A):"; printf '%s\n' $miss_a | sed 's/^/      /'; }
+    [ -n "$miss_b" ] && { echo "    missing (B):"; printf '%s\n' $miss_b | sed 's/^/      /'; }
+    echo
   fi
-  echo
 done
+
+echo
+echo "Note: group B includes legacy classes that may no longer render anywhere."
+echo "A miss there is worth checking against a real page before chasing it."

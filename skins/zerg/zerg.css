@@ -1166,3 +1166,239 @@ html.dark img.os-icon {
   border-radius: var(--zg-grow-sm);
   padding: 2px;
 }
+
+/* -----------------------------------------------------------------------------
+ * 14. styles.css CLASSES tw_dark.css NEVER OVERRIDES
+ *
+ * A blind spot, not a design choice. scripts/coverage.sh originally measured
+ * against tw_dark.css, on the reasoning that it lists what needs theming. But
+ * styles.css carries 123 colour-bearing classes that tw_dark.css never touches
+ * at all — so they render IDENTICALLY in light and dark mode, and the coverage
+ * report could not see them.
+ *
+ * Several are outright broken in the stock dark theme, not merely unthemed:
+ *   .tt-menu / .tt-open      #fff        the navbar search dropdown, white
+ *   .device-down             #ffd7d7     pale pink row background
+ *   .port-down               #ffdd99     pale orange
+ *   .device-rebooted         #bbffbb     pale green
+ *   .errorbox                #FFCCCC     pale pink
+ *   .infobox                 #CCCCFF     pale lavender
+ *   .messagebox              #ccffaa     pale green
+ *   .table-head-2            #cccccc bg, #000 text
+ *
+ * Those are upstream dark-theme bugs that any theme inherits. See FINDINGS.
+ * -------------------------------------------------------------------------- */
+
+/* --- Typeahead search (navbar, used constantly) --------------------------- */
+html.dark .tt-menu,
+html.dark .tt-open {
+  background-color: var(--zg-flesh);
+  border: 1px solid var(--zg-carapace);
+  border-radius: var(--zg-grow-sm);
+  color: var(--zg-text);
+}
+html.dark .tt-suggestion { color: var(--zg-text-dim); }
+html.dark .tt-suggestion:hover {
+  background-color: var(--zg-flesh-hi);
+  color: var(--zg-text-bright);
+}
+/* [!] upstream ships `.tt-suggestion:hover a { color:#fff !important }` */
+html.dark .tt-suggestion:hover a { color: var(--zg-text-bright) !important; }
+
+/* --- Row-state backgrounds (were pale pastels meant for a light theme) ---- */
+html.dark .device-down      { background: var(--zg-blood-deep); }
+html.dark .port-down        { background: var(--zg-ember-deep); }
+html.dark .device-rebooted  { background: var(--zg-ichor-deep); }
+html.dark .service-down,
+html.dark .bgp-down         { background: var(--zg-blood-deep); }
+
+/* --- Message boxes --------------------------------------------------------- */
+html.dark .infobox,
+html.dark .infobox-down,
+html.dark .infobox .rrd-pre { background-color: var(--zg-violet-deep); color: var(--zg-text); }
+html.dark .errorbox         { background-color: var(--zg-blood-deep); color: var(--zg-text); }
+html.dark .messagebox       { background-color: var(--zg-ichor-deep); color: var(--zg-text); }
+html.dark .greybox          { background-color: var(--zg-flesh); }
+
+/* --- Headings that assumed a light background ----------------------------- */
+html.dark .graphhead,
+html.dark .sectionhead { color: var(--zg-text-bright); font-family: var(--zg-font-chrome); }
+html.dark .tablehead   { color: var(--zg-text-dim); }
+html.dark .body-head-2,
+html.dark .table-head-2 {
+  background-color: var(--zg-flesh-raised);
+  color: var(--zg-text-bright);
+}
+
+/* --- Device / port / service state colours -------------------------------- */
+html.dark .list-device-down,
+html.dark a.list-device-down,
+html.dark a.list-device-down:visited     { color: var(--zg-blood); }
+html.dark a.list-device-ignored-up       { color: var(--zg-ichor); }
+html.dark a.list-device-disabled,
+html.dark a.list-device-disabled:visited,
+html.dark a.list-device-ignored          { color: var(--zg-text-mute); }
+
+html.dark .interface,
+html.dark .interface-admindown,
+html.dark a.interface-admindown          { color: var(--zg-text-mute); }
+html.dark .interface-updown,
+html.dark a.interface-updown             { color: var(--zg-blood); }
+html.dark a.interface-upup:hover,
+html.dark a.interface-updown:hover       { color: var(--zg-bone); }
+
+html.dark .sensor-low,  html.dark a.sensor-low,
+html.dark .sensor-high, html.dark a.sensor-high  { color: var(--zg-blood); }
+html.dark .sensor-ok,   html.dark a.sensor-ok    { color: var(--zg-ichor); }
+html.dark a.sensor-ok:hover,
+html.dark a.sensor-low:hover,
+html.dark a.sensor-high:hover                    { color: var(--zg-bone); }
+
+/* --- Availability map + compact alert map --------------------------------- */
+html.dark .availability-map-oldview-box-up,
+html.dark .availability-map-oldview-box-ignored-up,
+html.dark .widget-alert-map-compact-ok        { background-color: var(--zg-ichor); }
+html.dark .availability-map-oldview-box-warn,
+html.dark .widget-alert-map-compact-warning   { background-color: var(--zg-ember); }
+html.dark .availability-map-oldview-box-down,
+html.dark .widget-alert-map-compact-critical  { background-color: var(--zg-blood); }
+html.dark .availability-map-oldview-box-ignored,
+html.dark .availability-map-oldview-box-ignored-down { background-color: var(--zg-text-mute); }
+
+/* --- Reports --------------------------------------------------------------- */
+html.dark .report-up      { color: var(--zg-ichor); }
+html.dark .report-warning { color: var(--zg-ember); }
+html.dark .report-down    { color: var(--zg-blood); }
+
+/* --- Alert rules group header --------------------------------------------- */
+html.dark .rules-group-header .btn-primary {
+  background-color: var(--zg-flesh-raised);
+  border-color: var(--zg-carapace);
+}
+html.dark .rules-group-header .active {
+  background-color: var(--zg-ichor-deep);
+  border-color: var(--zg-ichor);
+}
+
+/* --- Legacy colour-word classes ------------------------------------------- */
+html.dark .green,  html.dark a.green  { color: var(--zg-ichor) !important; }
+html.dark .orange, html.dark a.orange { color: var(--zg-ember) !important; }
+html.dark .purple, html.dark a.purple { color: var(--zg-violet) !important; }
+
+/* --- Misc ------------------------------------------------------------------ */
+html.dark .minigraph-div { border-color: var(--zg-carapace); }
+html.dark .popover-inner { background-color: var(--zg-flesh-raised); color: var(--zg-text); }
+
+/* --- Vue multiselect (forms and search) ----------------------------------- */
+html.dark .multiselect__tags,
+html.dark .multiselect__content-wrapper,
+html.dark .multiselect__input,
+html.dark .multiselect__single {
+  background-color: var(--zg-flesh);
+  border-color: var(--zg-carapace);
+  color: var(--zg-text);
+}
+html.dark .multiselect__option--highlight {
+  background-color: var(--zg-flesh-hi);
+  color: var(--zg-text-bright);
+}
+html.dark .multiselect__option--selected {
+  background-color: var(--zg-ichor-deep);
+  color: var(--zg-text-bright);
+}
+html.dark .multiselect__tag {
+  background-color: var(--zg-flesh-raised);
+  color: var(--zg-text);
+}
+html.dark .multiselect__placeholder { color: var(--zg-text-mute); }
+
+/* -----------------------------------------------------------------------------
+ * 14b. Dashboard widget title overflow
+ *
+ * REGRESSION FIX. Section 13 set the widget header to uppercase with extra
+ * letter-spacing, which is fine for short titles ("World Map") but pushed long
+ * graph titles — full device name + interface + graph type — from two lines to
+ * three. grid-stack gives the widget a fixed height, so the third line was
+ * clipped by the body below it.
+ *
+ * Device names are not more readable shouted, so the uppercase treatment is
+ * dropped here and kept for panel headers, where titles are short.
+ * -------------------------------------------------------------------------- */
+html.dark .grid-stack-item-content > header {
+  text-transform: none;
+  letter-spacing: .01em;
+  line-height: 1.25;
+  padding-top: .5rem;
+  padding-bottom: .5rem;
+  overflow: hidden;
+}
+html.dark .grid-stack-item-content > header .dashboard-widget-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* -----------------------------------------------------------------------------
+ * 14c. LIGHT-THEME LEAKS STILL RENDERING
+ *
+ * The rest of group B is mostly dead Observium-era markup (.datacell, .body-1,
+ * .shadetabs, .dropdown_3columns) with zero references in resources/views —
+ * deliberately not chased. These are the ones that DO still render, and each
+ * is a white or near-white surface bleeding into the dark theme. They are
+ * upstream dark-theme bugs, not gaps in this skin.
+ * -------------------------------------------------------------------------- */
+
+/* Device overview striped rows — upstream #f9f9f9 / #f5f5f5, i.e. white.
+   Upstream selector is (0,4,0), so the whole chain has to be mirrored. */
+html.dark .device-overview > .panel-body > .row:nth-child(odd) {
+  background-color: rgba(255, 255, 255, .025);
+}
+html.dark .device-overview > .panel-body > .row:hover {
+  background-color: var(--zg-flesh-hi);
+}
+
+/* Search result rows — upstream #ffffff / #e0e5e5 */
+html.dark tr.search:nth-child(odd)  { background: var(--zg-flesh); }
+html.dark tr.search:nth-child(even) { background: var(--zg-flesh-raised); }
+
+/* Popover tooltips — upstream #f9f9f9 with black text */
+html.dark .tooltip.popover .popover-inner {
+  background: var(--zg-flesh-raised);
+  color: var(--zg-text);
+}
+html.dark .tooltip.popover .popover-arrow { border-color: var(--zg-flesh-raised); }
+
+/* Leaflet zoom buttons — upstream #fff on #000 */
+html.dark .zoomIn,
+html.dark .zoomOut {
+  background-color: var(--zg-flesh-raised);
+  color: var(--zg-text);
+  border-color: var(--zg-carapace);
+}
+
+/* Device links that assumed a light background (#23527c is unreadable on dark) */
+html.dark .device-head,
+html.dark a.list-device       { color: var(--zg-violet); }
+html.dark .device-table-metrics > a { color: var(--zg-text); }
+
+/* Remaining multiselect internals */
+html.dark .multiselect__spinner { background: var(--zg-flesh); }
+html.dark .multiselect--disabled .multiselect__current,
+html.dark .multiselect--disabled .multiselect__select {
+  background: var(--zg-flesh);
+  color: var(--zg-text-mute);
+}
+html.dark .multiselect__select:before { border-top-color: var(--zg-text-dim); }
+html.dark .multiselect__tag-icon:after { color: var(--zg-text); }
+html.dark .multiselect__tag-icon:focus,
+html.dark .multiselect__tag-icon:hover { background: var(--zg-blood); }
+html.dark .multiselect__option--disabled { color: var(--zg-text-mute); }
+html.dark .multiselect__option--group { background: var(--zg-flesh-raised); color: var(--zg-bone); }
+
+/* Misc white surfaces */
+html.dark .imgshadow  { background: var(--zg-flesh); }
+html.dark .black_box  { background-color: var(--zg-flesh-raised); color: var(--zg-text); }
+html.dark .blackbg    { background-color: var(--zg-flesh); }
+html.dark .footer-text,
+html.dark .header-text-3 { color: var(--zg-text); }
