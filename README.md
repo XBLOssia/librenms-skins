@@ -137,7 +137,8 @@ The plugin system cannot carry a theme. It exposes exactly five hooks
 Building these surfaced concrete, measurable problems with theming LibreNMS as
 it stands. They are written up in **[docs/FINDINGS.md](docs/FINDINGS.md)** with
 reproducible numbers — that document, not the skins, is the interesting output
-of this project.
+of this project. **[docs/PROPOSAL.md](docs/PROPOSAL.md)** turns it into three
+small, independent upstream changes, ready to post.
 
 ---
 
@@ -180,6 +181,7 @@ scripts/fetch-fonts.ps1     regenerate the bundled fonts reproducibly
 scripts/coverage.sh         report which components no skin has styled yet
 docs/DEPLOYMENT.md          install/uninstall runbook, persistence, rollback
 docs/FINDINGS.md            what building these surfaced about theming LibreNMS
+docs/PROPOSAL.md            upstream proposal, ready to post
 docs/ROADMAP.md             prioritised backlog and open decisions
 ```
 

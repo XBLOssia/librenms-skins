@@ -104,12 +104,13 @@ Three captures from a real instance would be worth more than any amount of
 description — and should be taken *after* Priority 1, so they show real pages
 rather than harness mockups.
 
-**Upstream.** `docs/FINDINGS.md` is in a state where it could open a discussion
-thread. It is now backed by three independent skins rather than one, which
-makes the argument considerably harder to wave off. See the "What would
-actually help" section there for the sequenced proposal, and note the PR
-template's explicit warning about LLM-generated pull requests — coordinate on
-Discord before writing any upstream code.
+**Upstream.** Drafted — see [PROPOSAL.md](PROPOSAL.md). Three small,
+independent changes (widget header class; tokenise 58 literals in 15 shared
+graph helpers; fix contextual row contrast), two of them provably
+pixel-identical. Venue is the community forum's Projects category, since GitHub
+Discussions is disabled on the repo. Open question left for you: whether to
+disclose AI tooling up front — PROPOSAL.md argues for yes and explains why.
+Coordinate on Discord before opening anything.
 
 ---
 
