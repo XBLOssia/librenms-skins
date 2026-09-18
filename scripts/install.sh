@@ -113,29 +113,48 @@ if [ -f "$GRAPHCONF" ]; then
   echo
   echo "Applying graph colours from skins/$SKIN/graph.conf"
 
+  # Normalise config:get output: arrays come back pretty-printed over several
+  # lines, scalars may contain spaces (rrdgraph_def_text_dark does), so only
+  # collapse whitespace when the value is a JSON array.
+  getcfg() {
+    v="$("$LNMS" config:get "$1" 2>/dev/null)"
+    case "$v" in
+      \[*) printf '%s' "$v" | tr -d '\n ' ;;
+      *)   printf '%s' "$v" | head -1 ;;
+    esac
+  }
+
+  # Record originals once, before the first change.
   if [ "$DRY" -eq 0 ] && [ ! -f "$CUSTOM/.previous-graph" ]; then
-    {
-      printf 'RRDGRAPH_DEF_TEXT_DARK=%s\n' "$("$LNMS" config:get rrdgraph_def_text_dark 2>/dev/null)"
-      printf 'RRDGRAPH_DEF_TEXT_COLOR_DARK=%s\n' "$("$LNMS" config:get rrdgraph_def_text_color_dark 2>/dev/null)"
-    } > "$CUSTOM/.previous-graph"
+    : > "$CUSTOM/.previous-graph"
+    while IFS= read -r line; do
+      case "$line" in ''|\#*) continue ;; esac
+      k="${line%%=*}"
+      printf '%s=%s\n' "$k" "$(getcfg "$k")" >> "$CUSTOM/.previous-graph"
+    done < "$GRAPHCONF"
   fi
 
-  gtext="$(grep '^RRDGRAPH_DEF_TEXT_DARK=' "$GRAPHCONF" | cut -d= -f2-)"
-  gcolor="$(grep '^RRDGRAPH_DEF_TEXT_COLOR_DARK=' "$GRAPHCONF" | cut -d= -f2-)"
-
-  # The `--` is REQUIRED. The value begins with `-c`, which Symfony's console
-  # parser otherwise treats as a short option and aborts with
+  # Apply. `--` is REQUIRED: rrdgraph_def_text_dark begins with `-c`, which
+  # Symfony's console parser otherwise claims as a short option and aborts with
   #   The "-c" option does not exist.
-  # LibreNMS's own shipped default for this key has the same shape, so the
-  # setting cannot be round-tripped through `lnms config:set` without it.
-  [ -n "$gtext" ]  && run "'$LNMS' config:set -- rrdgraph_def_text_dark '$gtext'"
-  [ -n "$gcolor" ] && run "'$LNMS' config:set -- rrdgraph_def_text_color_dark '$gcolor'"
+  # LibreNMS's own shipped default has that shape, so the setting cannot be
+  # round-tripped through `lnms config:set` without it.
+  gfail=0
+  while IFS= read -r line; do
+    case "$line" in ''|\#*) continue ;; esac
+    k="${line%%=*}"; v="${line#*=}"
+    run "'$LNMS' config:set -- '$k' '$v'"
+    if [ "$DRY" -eq 0 ] && [ "$(getcfg "$k")" != "$v" ]; then
+      echo "  FAIL $k did not take"
+      gfail=1
+    fi
+  done < "$GRAPHCONF"
 
-  if [ "$DRY" -eq 0 ] && [ -n "$gtext" ]; then
-    if [ "$("$LNMS" config:get rrdgraph_def_text_dark 2>/dev/null)" = "$gtext" ]; then
-      echo "  OK   graph colours applied"
+  if [ "$DRY" -eq 0 ]; then
+    if [ "$gfail" -eq 0 ]; then
+      echo "  OK   graph colours applied ($(grep -c '^[a-z]' "$GRAPHCONF") keys)"
     else
-      echo "  FAIL graph colours did not take - graphs will keep stock colours"
+      echo "  FAIL graph colours incomplete - graphs will be partly stock"
       ok=0
     fi
   fi

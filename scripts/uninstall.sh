@@ -113,14 +113,15 @@ fi
 if [ -f "$CUSTOM/.previous-graph" ] && [ -z "$ONLY" ]; then
   echo
   echo "Restoring RRDtool graph colours"
-  gtext="$(grep '^RRDGRAPH_DEF_TEXT_DARK=' "$CUSTOM/.previous-graph" | cut -d= -f2-)"
-  gcolor="$(grep '^RRDGRAPH_DEF_TEXT_COLOR_DARK=' "$CUSTOM/.previous-graph" | cut -d= -f2-)"
-  # `--` is required: these values start with `-c`, which Symfony's console
-  # parser would otherwise treat as a short option and reject.
-  if [ -n "$gtext" ]; then run "'$LNMS' config:set -- rrdgraph_def_text_dark '$gtext'"
-  else run "'$LNMS' config:clear rrdgraph_def_text_dark"; fi
-  if [ -n "$gcolor" ]; then run "'$LNMS' config:set -- rrdgraph_def_text_color_dark '$gcolor'"
-  else run "'$LNMS' config:clear rrdgraph_def_text_color_dark"; fi
+  # Restore by SETTING, not clearing: `lnms config:clear` does not reliably
+  # revert these keys (verified on a live host - a cleared graph_colours.*
+  # kept the overridden value).
+  while IFS= read -r line; do
+    case "$line" in ''|\#*) continue ;; esac
+    k="${line%%=*}"; v="${line#*=}"
+    if [ -n "$v" ]; then run "'$LNMS' config:set -- '$k' '$v'"
+    else run "'$LNMS' config:clear '$k'"; fi
+  done < "$CUSTOM/.previous-graph"
   run "rm -f '$CUSTOM/.previous-graph'"
 fi
 
