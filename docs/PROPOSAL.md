@@ -92,23 +92,24 @@ From a LibreNMS checkout at `63e0394`. All of these run in under a second.
 
 ```bash
 # 264 distinct first-party colours (4 non-vendor stylesheets + all PHP/Blade)
-{ grep -ohE '#[0-9a-fA-F]{6}' html/css/{styles,tw_dark,mono,blue}.css
-  grep -rohE '#[0-9a-fA-F]{6}' --include='*.php' includes app resources LibreNMS
+{ grep -ohE '#[0-9a-fA-F]{6}\b' html/css/{styles,tw_dark,mono,blue}.css
+  grep -rohE '#[0-9a-fA-F]{6}\b' --include='*.php' includes app resources LibreNMS
 } | tr 'A-F' 'a-f' | awk '!seen[$0]++' | wc -l
 
 # 0 font-family rules in the dark theme, against 272 hex literals
 grep -c 'font-family' html/css/tw_dark.css
-grep -ohE '#[0-9a-fA-F]{3,8}' html/css/tw_dark.css | wc -l
+grep -ohE '#[0-9a-fA-F]{3,8}' html/css/tw_dark.css | wc -l
 
-# 595 inline tw: colour utilities across Blade templates
-grep -rohE 'tw:(dark:)?(bg|text|border|ring|divide)-[a-z]+-[0-9]{2,3}'      --include='*.blade.php' resources | wc -l
+# 595 inline tw: colour utilities in Blade templates (588 of them in resources/)
+grep -rohE 'tw:(dark:)?(bg|text|border|ring|divide)-[a-z]+-[0-9]{2,3}' \
+     --include='*.blade.php' . | wc -l
 
 # 58 colour literals in the shared graph helpers
 grep -cE '#[0-9A-Fa-f]{6}' includes/html/graphs/generic_*.inc.php
 
 # ...and how many graph definitions each helper serves
-grep -rhoE 'generic_[a-z_]+\.inc\.php' includes/html/graphs/ \
-  | awk '{c[$0]++} END {for (k in c) printf "%5d  %s\n", c[k], k}'
+grep -rhoE 'generic_[a-z_]+[.]inc[.]php' includes/html/graphs/ \
+  | awk '{c[$0]++} END {for (k in c) print c[k], k}'
 
 # 89 graph files already using the graph_colours.* palettes
 grep -rl 'graph_colours' includes/html/graphs/ | wc -l
@@ -166,22 +167,22 @@ landing page reachable.
 ### Proposal 2 — tokenise the 58 colour literals in the shared graph helpers
 
 **Size:** 15 files, 58 literals. **Visual change:** none, if defaults keep
-current values. **Impact:** 1,300+ graph types.
+current values. **Impact:** 1,242 references.
 
 This is the highest leverage-to-effort item I found, and I had it badly wrong at
 first. I originally counted "149 graph files hard-code hex", which makes the job
 look enormous. It isn't — those files mostly *delegate* to a small set of shared
 `generic_*` helpers, and the literals live in the helpers:
 
-| Helper | Literals | Graph types served |
+| Helper | Literals | References (as the command counts them) |
 |---|---|---|
 | `generic_stats.inc.php` | **1** | **527** |
 | `generic_multi_line.inc.php` | **1** | **422** |
-| `generic_simplex.inc.php` | 5 | 120 |
+| `generic_simplex.inc.php` | 5 | 122 |
 | `generic_duplex.inc.php` | 7 | 28 |
 | **`generic_data.inc.php`** | **18** | **20** (incl. `port_bits`) |
-| …10 more | 26 | ~190 |
-| **Total** | **58 across 15 files** | **1,300+** |
+| …10 more | 26 | 123 |
+| **Total** | **58 across 15 files** | **1,242** |
 
 `generic_data.inc.php` is worth doing first on its own. It renders `port_bits` —
 the port traffic graph on effectively every dashboard — and hardcodes:
