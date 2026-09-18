@@ -31,7 +31,7 @@ of this document is to supply the numbers.
 7. There is no theme packaging, distribution, or per-user selection mechanism.
 8. **None of this applies to typography.** A full two-face typographic treatment
    needed zero workarounds, because core barely specifies `font-family`. The
-   obstacle is not theming — it is 468 hard-coded color literals.
+   obstacle is not theming — it is 264 hard-coded color literals.
 
 ---
 
@@ -232,15 +232,23 @@ How much hard-coded color there is, and where.
 | Inline `style=""` attributes in Blades | 191 (15 set color/background) |
 | `tw:` color utilities in Blades | **595 uses, 116 distinct** |
 | `tw:dark:` variants in Blades | 538 |
-| **Distinct colors repo-wide** | **468** |
+| **Distinct first-party colors** | **264** |
 | Blade templates total | 303 |
 
 A note on scope: **JavaScript is not a problem.** `html/js/` contains 629 hex
 literals, but they are essentially all vendored (`esri-leaflet-vector`,
 `leaflet`, `overlib_mini`). First-party JS carries almost no color.
 
-468 distinct colors is the headline. That is not a palette; it is an accretion.
+264 distinct colors is the headline. That is not a palette; it is an accretion.
 Consolidated, it is plausibly 40–60 real tokens.
+
+> **Correction.** An earlier version of this document said 468. That figure
+> included `html/js/`, which the paragraph directly above it correctly
+> identifies as essentially all vendored — so it counted ~228 colours from
+> `esri-leaflet`, `leaflet` and `overlib` that LibreNMS does not own and nobody
+> would ever theme. The document contradicted itself. 264 is first-party only:
+> the four non-vendor stylesheets plus all PHP and Blade. Caught by writing the
+> reproduction commands in `PROPOSAL.md` and running them.
 
 ---
 
@@ -267,7 +275,7 @@ The reason is visible in the inventory:
 | Inline in Blade templates | 595 `tw:` color utilities | ~16 `font-family` |
 
 LibreNMS has essentially **no opinion about typography**, so there is nothing to
-override. It has 468 distinct opinions about color, most of them literals, and
+override. It has 264 distinct opinions about color, most of them literals, and
 overriding any of them is a brawl.
 
 This is a clean natural experiment. Same stylesheet, same load order, same
@@ -276,7 +284,7 @@ hard-codes the property. Where it stays out of the way, theming is trivial.
 Where it scatters literals, theming requires defensive CSS that is nowhere
 documented.
 
-The problem is not that theming is hard. The problem is 468 literals.
+The problem is not that theming is hard. The problem is 264 literals.
 
 ---
 

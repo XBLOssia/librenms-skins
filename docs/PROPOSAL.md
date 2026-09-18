@@ -27,6 +27,10 @@ conversation first is worth a lot.
 > legacy colours before touching the theme). Two of them are provably
 > pixel-identical; one is an accessibility fix that stands on its own. Mind if
 > I write it up in Projects before I open anything?
+>
+> Being upfront: I used AI tooling for the measurement and drafting. Every
+> number comes with the command to reproduce it, I've checked them all by
+> hand, and I'll own whatever PRs come out of it — happy to be held to that.
 
 ---
 
@@ -55,13 +59,70 @@ That's what this is — cleanup first, no visual change, no theme system.
 
 ---
 
+### Up front: how this was produced
+
+I used AI tooling (Claude) to explore the codebase, take the measurements, and
+draft this post. I'm saying so before anything else because the PR template
+warns about low-quality LLM-generated submissions, and that warning is fair —
+a large mechanical refactor looks exactly like the thing it's defending
+against.
+
+So here's my commitment on methodology:
+
+- **Every number below is reproducible.** Commands are included. If a figure
+  doesn't reproduce on your checkout, it's wrong and I want to know.
+- **I've verified each one by hand** and I'll own any PRs that come out of
+  this — review them as if I typed every character, because I'm accountable
+  for them either way.
+- **Nothing here is a bulk-generated patch.** These are three targeted changes
+  I can explain line by line.
+
+For what it's worth, writing the reproduction commands caught an error in my
+own figures: I'd been quoting "468 distinct colours" repo-wide, which turned
+out to include `html/js/` — essentially all vendored (`leaflet`,
+`esri-leaflet`, `overlib`). Excluding code LibreNMS doesn't own, the real
+first-party figure is 264. That's the methodology working, and it's why I'd
+rather hand you the commands than ask you to trust a number.
+
+---
+
+### Reproduce every number
+
+From a LibreNMS checkout at `63e0394`. All of these run in under a second.
+
+```bash
+# 264 distinct first-party colours (4 non-vendor stylesheets + all PHP/Blade)
+{ grep -ohE '#[0-9a-fA-F]{6}' html/css/{styles,tw_dark,mono,blue}.css
+  grep -rohE '#[0-9a-fA-F]{6}' --include='*.php' includes app resources LibreNMS
+} | tr 'A-F' 'a-f' | awk '!seen[$0]++' | wc -l
+
+# 0 font-family rules in the dark theme, against 272 hex literals
+grep -c 'font-family' html/css/tw_dark.css
+grep -ohE '#[0-9a-fA-F]{3,8}' html/css/tw_dark.css | wc -l
+
+# 595 inline tw: colour utilities across Blade templates
+grep -rohE 'tw:(dark:)?(bg|text|border|ring|divide)-[a-z]+-[0-9]{2,3}'      --include='*.blade.php' resources | wc -l
+
+# 58 colour literals in the shared graph helpers
+grep -cE '#[0-9A-Fa-f]{6}' includes/html/graphs/generic_*.inc.php
+
+# ...and how many graph definitions each helper serves
+grep -rhoE 'generic_[a-z_]+\.inc\.php' includes/html/graphs/ \
+  | awk '{c[$0]++} END {for (k in c) printf "%5d  %s\n", c[k], k}'
+
+# 89 graph files already using the graph_colours.* palettes
+grep -rl 'graph_colours' includes/html/graphs/ | wc -l
+```
+
+---
+
 ### What I measured
 
 Against master @ `63e0394`.
 
 | | |
 |---|---|
-| Distinct colours repo-wide | **468** |
+| Distinct first-party colours (CSS + PHP + Blade) | **264** |
 | Hex literals in `styles.css` / `tw_dark.css` | 331 / 272 |
 | `tw:` colour utilities inline in Blade templates | 595 uses, 116 distinct |
 | `font-family` declarations in `tw_dark.css` | **0** |
@@ -209,23 +270,25 @@ The full write-up with reproduction steps is at
 
 ---
 
-## A note on disclosure — your call
+## Notes for us, not for the post
 
-The PR template explicitly warns that PRs may be closed without explanation due
-to LLM-generated submissions. A large mechanical refactor looks, from a
-reviewer's inbox, exactly like the thing that warning is defending against.
+Disclosure is now in the post itself, up front, before any of the asks.
 
-Two reasonable approaches:
+Everything above the `## Forum post` heading is internal — venue reasoning and
+the Discord opener. Post from `### Making LibreNMS themeable` down.
 
-1. **Say nothing about tooling.** You reviewed every line, you're accountable
-   for it, and how you wrote it is your business. Defensible.
-2. **Be upfront in one line**, e.g. *"I used AI tooling to do the measurement
-   and drafting; I've verified every number by hand and I'll own the PRs."*
+Sequencing that gives this the best chance:
 
-I'd lean toward (2). The measurements here are all independently reproducible,
-which is the best possible answer to "did a bot make this up" — anyone can run
-the greps and get the same numbers. Leading with that, rather than having it
-inferred, puts you in a stronger position.
+1. Discord first, using the opener above. A human conversation before a wall of
+   text, especially given the LLM warning.
+2. Post to Projects once someone has said "sure, write it up".
+3. Open **Proposal 1 only** first. One line, obviously correct, trivially
+   reviewable. A merged trivial PR buys standing for Proposal 2, which is the
+   one that actually matters.
+4. Hold Proposal 2 until 1 is merged. It's 15 files, and it wants a reviewer
+   who already trusts you.
+5. Proposal 3 can go any time — it's an accessibility bug fix and doesn't
+   depend on the others.
 
-Either way: land Proposal 1 first. It's one line, it's obviously correct, and a
-merged trivial PR buys standing for the larger one.
+If Proposal 1 is rejected, stop and ask why before writing more code. That
+answer determines whether any of the rest is worth the effort.
