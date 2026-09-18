@@ -35,31 +35,32 @@ only walking real pages will find those.
 
 ---
 
-## Priority 1 — install on a real instance
+## Done — deployed and walked
 
-Deployment tooling is ready — `scripts/install.sh` and
-[DEPLOYMENT.md](DEPLOYMENT.md). What remains is walking the real UI, which is
-worth more than any amount of further CSS: the harness DOM is synthetic and
-hand-written, so it cannot surface what it does not contain.
+Zerg, Protoss and Terran have all run on a live instance (`REDACTED-HOST`,
+LibreNMS `26.8.1-147-g63e0394bd1` — the exact commit the skins were built
+against). Deployment tooling is in `scripts/install.sh` and
+[DEPLOYMENT.md](DEPLOYMENT.md).
 
-Pages worth walking with each skin active:
+Walking real pages is what produced everything in the Completed section below,
+and it found things the harness structurally could not:
 
-- Global dashboard with real widgets (`grid-stack` / `gs-w` are unstyled)
-- Device list and a device's overview page
-- Alert rules and the rule builder (query-builder is unstyled)
-- Ports, health/sensors, syslog
-- The world map (Leaflet has its own dark filter in `app.css`)
-- Any page with a select2 dropdown — unstyled, and select2 is used widely
-- Settings, and the mobile/narrow layout (`navbar-toggle` is unstyled)
+- **Dashboard widget title bars** had no class at all — the colour lives in a
+  JavaScript template string, so no stylesheet-based audit could see it.
+- **Scrollbars**, which upstream never styles, so every scrollable widget
+  showed bright browser chrome.
+- **Alert-rule row contrast**, which turned out to be an upstream bug rather
+  than a gap in the skins.
+- **Port graphs**, which no skin can theme at all — see Not planned below.
 
-Expect the graph pages to look wrong in a way no skin can fix — RRDtool renders
-PNGs server-side. That is documented in FINDINGS §5, not a bug to chase.
+Still worth a look when convenient: the rule builder (`query-builder` is
+unstyled upstream), a datetimepicker, and the narrow/mobile layout.
 
 ---
 
-## Completed (2026-09-18)
+## Completed — the coverage pass
 
-Priorities 2–5 are done. Coverage went 43% → 100% in one pass, generated from a
+The original priorities 2–5 are done. Coverage went 43% → 100% in one pass, generated from a
 single template so the three skins could not drift. Closed: contextual panels,
 `.text-*` / `.bg-*`, headings, `.label-primary`, `.btn-info`, list groups,
 pagination, `.close`, popovers, `.navbar-toggle`, bordered/responsive tables,
@@ -86,11 +87,14 @@ coverage denominator: `query-builder` (alert rules), `bootstrap-datetimepicker`,
 `harness/index.html` renders roughly what the skins already cover, which makes
 it a poor regression net. Worth adding, in rough order of value:
 
-1. Contextual panel and text variants (Priority 2 above)
-2. Pagination, list groups, popovers, `.close`
-3. A narrow-viewport view so `navbar-toggle` is visible
-4. A real select2 and a datetimepicker
-5. Form validation states
+1. The components added in the coverage pass — contextual panels, `.text-*`,
+   pagination, list groups, popovers, `.close` — so regressions in them are
+   visible without a live instance
+2. A narrow-viewport view, so `navbar-toggle` is exercised
+3. A real select2 and a datetimepicker
+4. Form validation states
+5. Dashboard widget markup (`grid-stack-item-content > header`), which is where
+   the skins were silently wrong for two rounds
 
 A `?compare` mode rendering all three skins side by side in iframes would make
 drift between them obvious at a glance.
@@ -104,7 +108,11 @@ Three captures from a real instance would be worth more than any amount of
 description — and should be taken *after* Priority 1, so they show real pages
 rather than harness mockups.
 
-**Upstream.** Drafted — see [PROPOSAL.md](PROPOSAL.md). Now scoped to a phased
+**Upstream.** *Status: a deliberately non-specific message has gone out on
+Discord; the full plan has not been posted anywhere yet.* Nothing below is
+public, so it can still change freely.
+
+Drafted — see [PROPOSAL.md](PROPOSAL.md). Scoped to a phased
 **theme system**: admin installs a theme from a validated JSON manifest, users
 select it, custom themes are deletable and built-ins protected. Five phases,
 each independently shippable:
@@ -123,17 +131,50 @@ never arbitrary CSS, because arbitrary CSS enables exfiltration via
 `url()`, clickjacking, and remote beacons.
 
 Venue is the forum's Projects category (GitHub Discussions is disabled on the
-repo). AI tooling is disclosed up front in the post. Coordinate on Discord
-before opening anything, and don't write Phase 1 until the token contract gets
-a design discussion.
+repo). AI tooling is disclosed up front in the post.
+
+Still to decide before posting:
+
+- Whether to make this repo public. The post is self-contained and deliberately
+  doesn't link it, but "here are three working themes" is decent evidence that
+  the problem is real.
+- Whether to generate the before/after screenshots first. The post offers them
+  rather than claiming they exist.
+- Don't write a line of Phase 1 until the token contract question gets an
+  answer — that list becomes the theming API and is the expensive thing to get
+  wrong.
 
 ---
 
-## Not planned
+## Not planned *here*
 
-- **Per-user skin selection.** Needs a patch to
-  `resources/definitions/config_definitions.json`, which updates overwrite.
-  FINDINGS §6 has the detail.
-- **Theming graph interiors.** Structurally impossible from CSS.
+These are deliberately out of scope for this repo. Two of them are out of scope
+because they belong upstream, not because they're unwanted — see
+[PROPOSAL.md](PROPOSAL.md).
+
+- **Per-user theme selection, as a local hack.** It would need a patch to
+  `resources/definitions/config_definitions.json`, which updates overwrite, so
+  doing it downstream means re-patching forever (FINDINGS §6). Upstream this is
+  the *goal*, not a non-goal: Phase 3 makes `site_style` options dynamic and
+  Phase 4 adds the UI.
+
+- **Theming graph interiors beyond what config allows.** Worth stating
+  precisely, because an earlier version of this file got it wrong:
+
+  | Surface | Themeable? |
+  |---|---|
+  | Graph chrome — background, grid, frame, arrows | **Yes**, via `rrdgraph_def_text_dark`. Done. |
+  | Series colours on palette-driven graphs | **Yes**, via `graph_colours.*`. Done. |
+  | Series colours on `generic_*` helper graphs, incl. `port_bits` | **No.** 58 hardcoded literals, no config path. |
+
+  CSS can't reach any of it — RRDtool renders server-side — but "unthemeable"
+  was too strong. The last row is what Phase 0b of the proposal targets, and
+  it's why port graphs still render stock green/lavender under every skin.
+
 - **Supporting LibreNMS older than current master.** Selectors are verified
   against `63e0394` only.
+
+- **Arbitrary-CSS theme upload.** Not planned anywhere, including upstream. A
+  theme should be a validated token manifest; arbitrary CSS enables
+  exfiltration via `url()`, clickjacking and remote beacons. PROPOSAL.md has
+  the reasoning.
