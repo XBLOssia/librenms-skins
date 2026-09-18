@@ -104,13 +104,28 @@ Three captures from a real instance would be worth more than any amount of
 description — and should be taken *after* Priority 1, so they show real pages
 rather than harness mockups.
 
-**Upstream.** Drafted — see [PROPOSAL.md](PROPOSAL.md). Three small,
-independent changes (widget header class; tokenise 58 literals in 15 shared
-graph helpers; fix contextual row contrast), two of them provably
-pixel-identical. Venue is the community forum's Projects category, since GitHub
-Discussions is disabled on the repo. Open question left for you: whether to
-disclose AI tooling up front — PROPOSAL.md argues for yes and explains why.
-Coordinate on Discord before opening anything.
+**Upstream.** Drafted — see [PROPOSAL.md](PROPOSAL.md). Now scoped to a phased
+**theme system**: admin installs a theme from a validated JSON manifest, users
+select it, custom themes are deletable and built-ins protected. Five phases,
+each independently shippable:
+
+- **0** — three small fixes (widget header class, tokenise the 58 graph-helper
+  literals, contextual row contrast). No theme system required.
+- **1** — define the token contract from the 603 literals in `styles.css` +
+  `tw_dark.css`. Pixel-identical. This list *is* the theming API.
+- **2** — one palette source for both CSS and graphs.
+- **3** — themes as data: a `themes` table shaped like `custom_map`, built-ins
+  seeded from `resources/definitions/`, `lnms theme:import`.
+- **4** — upload/delete UI, policy-gated.
+
+Security model is the load-bearing part: a theme is a validated token manifest,
+never arbitrary CSS, because arbitrary CSS enables exfiltration via
+`url()`, clickjacking, and remote beacons.
+
+Venue is the forum's Projects category (GitHub Discussions is disabled on the
+repo). AI tooling is disclosed up front in the post. Coordinate on Discord
+before opening anything, and don't write Phase 1 until the token contract gets
+a design discussion.
 
 ---
 
