@@ -283,6 +283,19 @@ Migrating the 149 stragglers onto the palette system that already exists is
 mechanical, independent of the CSS work, and would make graphs theme-aware for
 the first time in a way a theme could actually drive.
 
+### Papercut: the value cannot be set via LibreNMS's own CLI
+
+```console
+$ lnms config:set rrdgraph_def_text_dark '-c BACK#1d1019 -c GRID#2e1b28'
+The "-c" option does not exist.
+```
+
+Symfony's console parser reads the leading `-c` as a short option. A `--`
+separator before the arguments is required. Since the shipped default for this
+key has exactly that shape, **LibreNMS cannot round-trip its own default value
+through its own CLI** without a flag that nothing documents. Any tooling that
+sets this key has to know.
+
 ---
 
 ## 6. No installation story
