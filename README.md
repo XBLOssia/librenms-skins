@@ -38,47 +38,53 @@ Verified against LibreNMS master @ `63e0394` (2026-09-17).
 
 ## Install
 
-Every skin is an **overlay on the stock dark theme**, not a replacement for it.
-Set your theme to Dark first, or the skin will render on a light base and look
-broken.
-
-1. Set your site style to dark — *Preferences → Theme → Dark*.
-
-2. Copy one skin directory into the update-safe custom CSS directory. Copy the
-   whole directory — the webfonts live inside it:
+On the LibreNMS host:
 
 ```bash
-cp -r skins/terran /opt/librenms/html/css/custom/
+sudo -u librenms git clone https://github.com/XBLOssia/librenms-skins.git /opt/librenms-skins
+cd /opt/librenms-skins
+./scripts/install.sh zerg
 ```
 
-3. Register it:
+Then in the browser: set **Preferences → Theme → Dark** (the skins are an
+overlay on the stock dark theme and look broken on the light base), and
+hard-refresh.
 
-```bash
-lnms config:set webui.custom_css '["css/custom/terran/terran.css"]'
-```
+Substitute `terran` or `protoss` for `zerg`. Add `--dry-run` to preview every
+step without changing anything.
 
-4. Hard-refresh the browser.
-
-Substitute `protoss` or `zerg` for `terran` in both commands to use those.
-Load **one skin at a time** — `webui.custom_css` is an array and listing two
-will cascade them into mush.
-
-**Nothing else to install.** Each skin bundles its own webfonts (~61–77KB of
+**Nothing else to install.** Each skin bundles its own webfonts (~58–77KB of
 Latin-subset woff2, all SIL Open Font License). No system fonts to chase, and
 no request ever leaves the box.
+
+### Uninstall
+
+```bash
+./scripts/uninstall.sh
+```
+
+Removes the skin files and restores `webui.custom_css` to whatever it was
+before the first install. Or by hand:
+
+```bash
+rm -rf /opt/librenms/html/css/custom/{terran,protoss,zerg}
+lnms config:clear webui.custom_css
+```
+
+### Safety
+
+Nothing in LibreNMS core is modified, no schema changes, no services touched —
+the entire footprint is one config row and one directory of static files under
+`html/css/custom/`, which is gitignored by LibreNMS. Verified against
+`daily.sh`: it updates with `git pull` and `git checkout` and never runs
+`git clean`, so the skin survives updates with no patch to reapply.
 
 > `webui.custom_css` is instance-wide. Every user on the instance gets the same
 > skin; LibreNMS has no per-user custom theme selection. See
 > [docs/FINDINGS.md](docs/FINDINGS.md) §6.
 
-`html/css/custom/` is gitignored by LibreNMS, so the skin survives `./daily.sh`
-updates. Nothing in LibreNMS core is modified.
-
-### Uninstall
-
-```bash
-lnms config:set webui.custom_css '[]'
-```
+Full runbook, rollback detail and troubleshooting:
+**[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**.
 
 ---
 
@@ -169,16 +175,19 @@ skins/<name>/<name>.css     the skin - token block at top drives everything
 skins/<name>/fonts/         bundled OFL webfonts + licence notices
 skins/<name>/FONTS.md       typography rationale and how to swap faces
 harness/                    static preview, real LibreNMS CSS, real DOM
+scripts/install.sh          install a skin onto a LibreNMS host
+scripts/uninstall.sh        remove skins and restore the previous config
 scripts/fetch-fonts.ps1     regenerate the bundled fonts reproducibly
 scripts/coverage.sh         report which components no skin has styled yet
+docs/DEPLOYMENT.md          install/uninstall runbook, persistence, rollback
 docs/FINDINGS.md            what building these surfaced about theming LibreNMS
 docs/ROADMAP.md             prioritised backlog and open decisions
 ```
 
 ## Licence
 
-The skins are original CSS. The bundled fonts are SIL Open Font License 1.1,
-with notices included beside them in each `fonts/` directory.
+[MIT](LICENSE).
 
-**The repository itself has no licence yet** — see
-[docs/ROADMAP.md](docs/ROADMAP.md#open-decisions).
+The bundled webfonts under `skins/*/fonts/` are **not** covered by that — they
+are SIL Open Font License 1.1, with the upstream notice included beside the
+font files in each directory.

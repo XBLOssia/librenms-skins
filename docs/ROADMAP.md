@@ -2,7 +2,7 @@
 
 Where the project actually stands, and what to pick up next.
 
-Last updated 2026-09-17, against LibreNMS master @ `63e0394`.
+Last updated 2026-09-18, against LibreNMS master @ `63e0394`.
 
 ---
 
@@ -36,8 +36,10 @@ they already cover. They are not finished.
 
 ## Priority 1 — install on a real instance
 
-Higher value than any amount of further CSS. The harness DOM is synthetic and
-hand-written; it cannot surface what it does not contain.
+Deployment tooling is ready — `scripts/install.sh` and
+[DEPLOYMENT.md](DEPLOYMENT.md). What remains is walking the real UI, which is
+worth more than any amount of further CSS: the harness DOM is synthetic and
+hand-written, so it cannot surface what it does not contain.
 
 Pages worth walking with each skin active:
 
@@ -153,12 +155,6 @@ drift between them obvious at a glance.
 ---
 
 ## Open decisions
-
-**Repo licence.** There isn't one. The CSS is original work and the bundled
-fonts are OFL (which is satisfied — notices ship alongside them), but with no
-top-level licence nobody else can reuse the skins. MIT would be the
-conventional pick for something like this. Deliberately left for you to choose
-rather than assumed.
 
 **Screenshots in the README.** There are none, and this is a visual project.
 Three captures from a real instance would be worth more than any amount of
