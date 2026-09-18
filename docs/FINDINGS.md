@@ -19,8 +19,11 @@ of this document is to supply the numbers.
    two *and* three classes deep, so each component must be checked against the
    rule it is fighting. Getting this wrong left the **dashboard** — the landing
    page — unthemed on a live install.
-3. Some colors **cannot be overridden without `!important`**, because core
-   ships `!important` on them via Tailwind's `@apply ... !` syntax.
+3. **71 colour declarations cannot be overridden at all.** A `tw:…!` utility
+   written inline in a template lands `!important` inside a cascade layer, and
+   `webui.custom_css` — loaded last, unlayered — structurally cannot beat it.
+   Verified four ways against a live instance. This is the one that no amount
+   of CSS skill works around.
 4. Graphs have **their own colour system**, unreachable from CSS, keyed off a
    two-value boolean, and bypassed by 149 graph files that hard-code hex anyway.
 5. Some colour **is not in a stylesheet at all** — the dashboard widget title
@@ -138,11 +141,77 @@ Tailwind's `@apply`, using the `!` important modifier:
 }
 ```
 
-Those `!` suffixes compile to `color: … !important` on unlayered rules. **No
-specificity beats an `!important` declaration.** A skin has exactly one
-available response: `!important` of its own. That is why `terran.css` contains
-`!important` on every `.lnms-btn-*` and `.device-link-*` rule — each one is
-annotated `[!]` in the source with the upstream rule that forced it.
+Those `!` suffixes compile to `!important`. No specificity beats an
+`!important` declaration, so a skin has to answer with `!important` of its own.
+That is why `terran.css` carries `!important` on every `.lnms-btn-*` and
+`.device-link-*` rule — each annotated `[!]` in the source with the upstream
+rule that forced it.
+
+### But that only works for *half* of them
+
+An earlier version of this document stopped there and said `!important` was the
+answer. That is wrong, and the distinction matters more than the original
+point.
+
+**Where the `!` lives decides whether a theme can reach it at all:**
+
+| `!` appears in | Compiles to | Can `custom_css` override it? |
+|---|---|---|
+| `@apply … tw:text-white!` inside `app.css` | `!important` on an **unlayered** rule | **Yes** — match the specificity and use `!important` |
+| `tw:text-white!` inline in a Blade template | `!important` inside the **`utilities` cascade layer** | **No.** Not by any means found. |
+
+The second row is a hard wall, and it is a consequence of load order rather
+than a quirk:
+
+- `app.css` is imported first and its line 2, `@import "tailwindcss"`,
+  establishes Tailwind's layer order (`theme`, `base`, `components`,
+  `utilities`).
+- `webui.custom_css[]` is injected **last**
+  (`librenmsv1.blade.php:47`), and is unlayered.
+- For *normal* declarations, unlayered wins over layered — which is why
+  ordinary theming works at all.
+- For *`!important`* declarations the cascade **reverses**: earlier layers beat
+  later ones, and unlayered `!important` is the weakest of all.
+- A stylesheet cannot retroactively insert itself into an earlier layer. Layer
+  order follows first declaration, and `app.css` already declared them.
+
+So an `!important` in `custom_css` structurally cannot beat an `!important`
+inside any `app.css` layer.
+
+### Verified, not argued
+
+Tested against a live instance on the red port links in the Top Errors widget
+(`tw:dark:text-red-500!`, measured at **3.3:1** — below WCAG AA). Every result
+was read back as normalised RGB rather than trusting the computed-value string:
+
+| Attempt | Result |
+|---|---|
+| Unlayered `!important`, specificity (0,2,1) vs upstream (0,1,0) | no change |
+| Same rule inside `@layer utilities` | no change |
+| Same rule inside `@layer base` | no change |
+| Redefining `--tw-color-red-500` on `html.dark` | no change |
+
+The winning rule throughout:
+`.tw\:dark\:text-red-500\!:where(.dark, .dark *)`, `!important`, layer
+`utilities`.
+
+### How much is out of reach
+
+```bash
+grep -rhoE 'tw:(dark:)?(text|bg|border|ring|divide)-[a-z0-9-]+!'      --include='*.blade.php' . | sort -u
+```
+
+**71 uses, 22 distinct colour utilities, across 9 Blade files** — every one of
+them unreachable from `custom_css`. They include `tw:bg-white!` and
+`tw:dark:bg-white!`: a forced white background that no theme can change.
+
+This is the strongest single argument in this document. Everything else here is
+a theme author having to work harder than they should. This is a theme author
+being unable to do the thing at all, and no amount of CSS skill changes it.
+
+**The fix is trivial upstream:** drop the `!` where nothing depends on it, or
+move the declaration into a component class. Neither needs a theme system, a
+token system, or any visual change.
 
 This is the mechanism behind
 [PR #20294](https://github.com/librenms/librenms/pull/20294), where the mono
@@ -440,31 +509,35 @@ a parallel CSS-custom-property system. A proposal should follow that.
 In dependency order. Each is independently shippable and provably
 pixel-identical, which is what makes them reviewable.
 
-1. **Give the dashboard widget header a class** and fix the contextual-row
+1. **Drop the `!` from the 22 inline colour utilities** (§2). 9 files, no
+   visual change, and it is the difference between "a theme author works
+   harder" and "a theme author cannot do it". Nothing else in this list
+   unlocks as much for as little.
+2. **Give the dashboard widget header a class** and fix the contextual-row
    contrast (§2b, §2c). Both are small, neither needs the token work, and the
    second is an accessibility fix that stands on its own.
-2. **Tokenise the 58 hex literals in the 15 shared `generic_*` graph helpers**
+3. **Tokenise the 58 hex literals in the 15 shared `generic_*` graph helpers**
    (§5). This is the best effort-to-impact ratio available: 15 files, one
    afternoon, and 1,242 graph references become theme-aware. Start with
    `generic_data.inc.php` — 18 literals, and it renders the port traffic graph
    on every dashboard. The same pass should retire the inline
    `session('applied_site_style') == 'dark' ? '#x' : '#y'` ternaries so graphs
    have one colour source rather than three.
-3. **Replace the arbitrary-value literals** (`tw:bg-[#337ab7]` etc.) in
+4. **Replace the arbitrary-value literals** (`tw:bg-[#337ab7]` etc.) in
    `app.css` component classes with `@theme` tokens. Small, contained, high
    symbolic value.
-4. **Drop the `!` modifiers** from `@apply` in component classes, once nothing
+5. **Drop the remaining `!` modifiers** from `@apply` in component classes, once nothing
    depends on them. This alone would let skins stop using `!important`.
-5. **Fold `tw_dark.css`'s 272 literals into the `@theme` block**, area by area,
+6. **Fold `tw_dark.css`'s 272 literals into the `@theme` block**, area by area,
    each PR pixel-identical.
-6. **Normalise `tw_dark.css` to a consistent selector depth.** Today it mixes
+7. **Normalise `tw_dark.css` to a consistent selector depth.** Today it mixes
    `.dark .x` and `.dark .y .x`, which is what makes overriding it require
    reading it first. Even without tokens, a predictable depth would make
    third-party theming tractable.
-7. **Then**, and only then, palette changes and a real theme system become
+8. **Then**, and only then, palette changes and a real theme system become
    cheap.
 
-Steps 2–5 are unglamorous and involve no visible change. That is the point —
+Steps 3–6 are unglamorous and involve no visible change. That is the point —
 and it is exactly the order the maintainer asked for.
 
 ---

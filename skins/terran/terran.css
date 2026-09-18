@@ -420,7 +420,6 @@ html.dark .bootgrid-table td   { color: var(--tn-text); }
  * -------------------------------------------------------------------------- */
 html.dark .btn {
   border-radius: var(--tn-radius);
-  font-family: var(--tn-font-chrome);
   letter-spacing: .07em;
   text-transform: uppercase;
   border-width: 1px;
@@ -1453,3 +1452,22 @@ html.dark .nav > li > a:focus {
  * means de-emphasised, not unreadable; a secondary colour still has to clear
  * 4.5:1 against every background it can appear on, and the worst case here is
  * the hover/active row rather than the panel body. */
+
+/* -----------------------------------------------------------------------------
+ * 14f. DO NOT SET font-family ON ICON ELEMENTS
+ *
+ * LibreNMS puts Font Awesome classes on the BUTTON itself, not on a child <i>:
+ *
+ *   <button class="btn btn-danger command-ack-alert fa fa-exclamation-triangle">
+ *
+ * So `html.dark .btn { font-family: ... }` (0,2,1) beats Font Awesome's own
+ * `.fa { font-family: "Font Awesome 6 Free" }` (0,1,0), the glyph lookup fails,
+ * and the button renders an empty tofu box. It cost the ACK and Notes buttons
+ * on the alerts widget - 77 elements across the dashboard.
+ *
+ * The button's COLOURS are still themed; only font-family is withheld, and only
+ * from elements that are icons. Do not "simplify" this back into the .btn rule.
+ * -------------------------------------------------------------------------- */
+html.dark .btn:not(.fa):not([class*="fa-"]) {
+  font-family: var(--tn-font-chrome);
+}

@@ -140,14 +140,44 @@ Each is independently shippable and useful on its own. Phases 0–2 are the
 cleanup murrant asked for. Phases 3–4 are the theme system, and they're
 comparatively small *because* of 0–2.
 
-#### Phase 0 — three small fixes, no theme system required
+#### Phase 0 — four small fixes, no theme system required
 
-**0a. Give the dashboard widget header a class.** One line, no visual change.
+**0a. Drop the `!` from inline colour utilities.** 9 files, no visual change,
+and it is the only item here that changes *impossible* into *possible*.
+
+A `tw:…!` utility written inline in a template compiles to `!important` inside
+Tailwind's `utilities` cascade layer. `webui.custom_css[]` is injected last and
+is unlayered — and for `!important` declarations the cascade reverses, so
+earlier layers win and unlayered `!important` is the weakest of all. A
+stylesheet cannot retroactively place itself in an earlier layer, because layer
+order follows first declaration and `app.css` already declared them.
+
+The practical result: **a theme cannot override these at any specificity, with
+or without `!important`.** Verified four ways against a live instance, on
+`tw:dark:text-red-500!` (the red port links in Top Errors, measured at 3.3:1 —
+below WCAG AA). Unlayered `!important` at higher specificity, the same rule
+inside `@layer utilities`, inside `@layer base`, and redefining
+`--tw-color-red-500` all left the computed colour unchanged.
+
+```bash
+grep -rhoE 'tw:(dark:)?(text|bg|border|ring|divide)-[a-z0-9-]+!' \
+     --include='*.blade.php' . | awk '!s[$0]++'
+```
+
+**71 uses, 22 distinct, across 9 files.** They include `tw:bg-white!` and
+`tw:dark:bg-white!` — a forced white background no theme can change.
+
+Where the `!` is load-bearing it should stay; where it isn't, dropping it costs
+nothing and is invisible. Where it genuinely is needed, moving the declaration
+into a component class in `app.css` also fixes it, because `@apply` output is
+unlayered and therefore reachable.
+
+**0b. Give the dashboard widget header a class.** One line, no visual change.
 `.dashboard-widget-title` is only the inner `<span>`, so the grey bar itself is
 unreachable. Precedent: [#20294](https://github.com/librenms/librenms/pull/20294)
 added `.widget-header` to a sibling element for exactly this reason.
 
-**0b. Tokenise the 58 colour literals in the shared graph helpers.** 15 files.
+**0c. Tokenise the 58 colour literals in the shared graph helpers.** 15 files.
 Pixel-identical if defaults keep current values. These helpers are referenced by
 1,242 graph definitions, so this is the best effort-to-impact ratio in the whole
 proposal:
@@ -162,7 +192,7 @@ proposal:
 | …10 more | 26 | 123 |
 | **Total** | **58 across 15 files** | **1,242** |
 
-`generic_data.inc.php` is worth doing first on its own — it renders `port_bits`,
+`generic_data.inc.php` is worth doing first within 0c — it renders `port_bits`,
 the traffic graph on effectively every dashboard, and hardcodes:
 
 ```php
@@ -180,7 +210,7 @@ This needs no new machinery. `graph_colours.*` already exists, is already
 config-driven, and is already used by 89 graph files. It's applying an in-tree
 pattern to the helpers that never got it.
 
-**0c. Fix contextual table row contrast.** Four values, and not a theming ask at
+**0d. Fix contextual table row contrast.** Four values, and not a theming ask at
 all. `tw_dark.css` fills contextual rows with saturated mid-tones and leaves the
 text dark:
 
@@ -294,8 +324,9 @@ Not approval of the whole thing. Specifically:
 2. **Does the token contract in Phase 1 need a design discussion first?** It's
    the part that's hard to change later, and I'd rather agree the shape than
    present it finished.
-3. **May I open Phase 0a?** One line, obviously correct, easy to review — a
-   reasonable place to start building trust.
+3. **May I open Phase 0b?** One line, obviously correct, easy to review — a
+   reasonable place to start building trust. I would then like to follow with
+   0a, which is the one that actually unblocks third-party theming.
 
 I'm aware [#4863](https://github.com/librenms/librenms/issues/4863) asked for
 custom templates in 2016 and was closed, and that #19029 was closed this year. I
