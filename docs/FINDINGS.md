@@ -317,28 +317,56 @@ What makes this a finding rather than a feature:
    palettes. A third theme cannot have its own graph colours without
    overwriting the dark one — which is precisely what this repo's installer has
    to do, and why it must save and restore the previous values.
-3. **Individual graph files bypass it anyway.** For example
-   `includes/html/graphs/sensor/generic.inc.php`:
+3. **The graphs people actually look at bypass it entirely.** `port_bits` —
+   the most-viewed graph in the product — resolves to
+   `includes/html/graphs/generic_data.inc.php`, which hardcodes every colour:
 
 ```php
-$sensor_color     = session('applied_site_style') == 'dark' ? '#f2f2f2' : '#272b30';
-$background_color = session('applied_site_style') == 'dark' ? '#272b30' : '#ffffff';
-$variance_color   = session('applied_site_style') == 'dark' ? '#3e444c' : '#c5c5c5';
+$rrd_options[] = 'AREA:in'   . $format . '_max#D7FFC7' . $stacked['transparency'] . ':';
+$rrd_options[] = 'AREA:in'   . $format . '#90B040'     . $stacked['transparency'] . ':';
+$rrd_options[] = 'LINE:in'   . $format . '#608720:In ';
+$rrd_options[] = 'AREA:dout' . $format . '_max#E0E0FF' . $stacked['transparency'] . ':';
+$rrd_options[] = 'AREA:dout' . $format . '#8080C0'     . $stacked['transparency'] . ':';
+$rrd_options[] = 'LINE:dout' . $format . '#606090:Out';
 ```
 
-   Three more literals, hardcoded inline, ignoring `rrdgraph_def_text_dark`
-   entirely. 149 graph files hard-code hex this way while 89 use the
-   `graph_colours.*` palettes that already exist.
+   No config, no palette. That green and lavender is unreachable from
+   `graph_colours.*`, from `rrdgraph_def_text_dark`, and from CSS. **Verified
+   empirically**: two skins with completely different palettes — one teal/gold,
+   one acid-green/magenta — render byte-identical port graphs.
 
-| | Count |
-|---|---|
-| Graph definition files (`includes/html/graphs/`) | 1835 |
-| …that use the `graph_colours.*` config palettes | 89 |
-| …that hard-code hex directly | **149** |
+### Correction: it is 58 literals, not 149 files
 
-Migrating the 149 stragglers onto the palette system that already exists is
-mechanical, independent of the CSS work, and would make graphs theme-aware for
-the first time in a way a theme could actually drive.
+An earlier version of this document said 149 graph files hard-code hex, which
+made the cleanup look far larger than it is. That count is real but misleading:
+those files mostly *delegate* to a small set of shared `generic_*` helpers, and
+the literals live in the helpers.
+
+| Helper | Literals | Graph types it serves |
+|---|---|---|
+| `generic_stats.inc.php` | 1 | **527** |
+| `generic_multi_line.inc.php` | 1 | **422** |
+| `generic_simplex.inc.php` | 5 | 120 |
+| `generic_v3_multiline.inc.php` | 1 | 59 |
+| `generic_multi_line_exact_numbers.inc.php` | 1 | 56 |
+| `generic_multi_simplex_seperated.inc.php` | 2 | 46 |
+| `generic_duplex.inc.php` | 7 | 28 |
+| `generic_v3_multiline_float.inc.php` | 1 | 23 |
+| **`generic_data.inc.php`** | **18** | **20** (incl. `port_bits`) |
+| `generic_multi_bits_separated.inc.php` | 1 | 9 |
+| …5 more | 22 | 12 |
+| **Total** | **58 across 15 files** | **1,300+** |
+
+**Tokenising 58 literals in 15 files would make essentially every graph in
+LibreNMS theme-aware.** That is an afternoon's mechanical work, not a migration
+of 149 files — and `generic_data.inc.php` alone, at 18 literals, covers the port
+traffic graph that dominates every dashboard.
+
+This is the highest leverage-to-effort item in this entire document.
+
+The `graph_colours.*` palette system already exists and 89 graph files use it,
+so the abstraction is proven — it simply was never applied to the shared
+helpers.
 
 ### Papercut: the value cannot be set via LibreNMS's own CLI
 
@@ -407,12 +435,13 @@ pixel-identical, which is what makes them reviewable.
 1. **Give the dashboard widget header a class** and fix the contextual-row
    contrast (§2b, §2c). Both are small, neither needs the token work, and the
    second is an accessibility fix that stands on its own.
-2. **Migrate the 149 hard-coded graph files onto `graph_colours.*`.** Entirely
-   separate from the CSS work, mechanical, and the abstraction already exists.
-   The same pass should retire the inline
-   `session('applied_site_style') == 'dark' ? '#x' : '#y'` ternaries (see §5)
-   in favour of `rrdgraph_def_text*`, so graphs have one colour source rather
-   than three.
+2. **Tokenise the 58 hex literals in the 15 shared `generic_*` graph helpers**
+   (§5). This is the best effort-to-impact ratio available: 15 files, one
+   afternoon, and 1,300+ graph types become theme-aware. Start with
+   `generic_data.inc.php` — 18 literals, and it renders the port traffic graph
+   on every dashboard. The same pass should retire the inline
+   `session('applied_site_style') == 'dark' ? '#x' : '#y'` ternaries so graphs
+   have one colour source rather than three.
 3. **Replace the arbitrary-value literals** (`tw:bg-[#337ab7]` etc.) in
    `app.css` component classes with `@theme` tokens. Small, contained, high
    symbolic value.
