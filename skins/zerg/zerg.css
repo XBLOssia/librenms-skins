@@ -1333,6 +1333,11 @@ html.dark .grid-stack-item-content > header {
   overflow: hidden;
 }
 html.dark .grid-stack-item-content > header .dashboard-widget-title {
+  /* Section 11 sets text-transform on this span directly. A reset on the
+     parent cannot undo that - a rule on the element beats inheritance - so it
+     has to be cleared here or the comment above is a lie. */
+  text-transform: none;
+  letter-spacing: .01em;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
