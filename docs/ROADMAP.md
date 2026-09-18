@@ -44,10 +44,14 @@ references in `resources/views`. Deliberately not chased; run
 All three sit at the same number because they share structure. Fix a gap in one
 and the same gap exists in the other two; the work is parallel by construction.
 
-Reaching 100% does **not** mean pixel-perfect. It means every component
-`tw_dark.css` styles is now answered by each skin. Components upstream never
-themed (query-builder, datetimepicker, bootstrap-switch) are still stock, and
-only walking real pages will find those.
+Coverage counts *selectors answered*, which is not the same as *correct*. It
+cannot see contrast failures, elements whose colour comes from a JavaScript
+string, vendored stylesheets like `MarkerCluster.Default.css`, or a rule of the
+skin's own that breaks something else. Every one of those happened, and every
+one was caught by **[harness/audit.js](../harness/audit.js)** run against a
+live page — not by this number.
+
+Treat coverage as a floor, and the live audit as the actual test.
 
 ---
 
@@ -76,8 +80,8 @@ unstyled upstream), a datetimepicker, and the narrow/mobile layout.
 
 ## Completed — the coverage pass
 
-The original priorities 2–5 are done. Coverage went 43% → 100% in one pass, generated from a
-single template so the three skins could not drift. Closed: contextual panels,
+The original priorities 2–5 are done, generated from a single template so the
+three skins could not drift. Closed: contextual panels,
 `.text-*` / `.bg-*`, headings, `.label-primary`, `.btn-info`, list groups,
 pagination, `.close`, popovers, `.navbar-toggle`, bordered/responsive tables,
 form validation states, LibreNMS-specific classes, legacy `.blue/.grey/.red`,
@@ -98,22 +102,39 @@ coverage denominator: `query-builder` (alert rules), `bootstrap-datetimepicker`,
 
 ---
 
-## Harness gaps
+## Verifying a skin
 
-`harness/index.html` renders roughly what the skins already cover, which makes
-it a poor regression net. Worth adding, in rough order of value:
+Two tools, and the order matters.
 
-1. The components added in the coverage pass — contextual panels, `.text-*`,
-   pagination, list groups, popovers, `.close` — so regressions in them are
-   visible without a live instance
-2. A narrow-viewport view, so `navbar-toggle` is exercised
+**1. `harness/audit.js` — run this first.** Paste into devtools on a logged-in
+page with the skin active. Reports light surfaces that shouldn't exist and any
+text below WCAG AA. This is what actually finds problems: the widget header
+built in a JS string, the vendored Leaflet cluster markers, 77 icon buttons
+whose font-family the skin had clobbered, and five contrast failures the skins
+themselves introduced. None were visible to a stylesheet-based check.
+
+Run it on at least `/`, `/devices` and `/alert-rules`. All three currently
+return zero findings on all three skins.
+
+**2. `scripts/coverage.sh` — run this second**, as a floor. It answers "did I
+forget a component", not "does it look right".
+
+### Harness gaps
+
+`harness/index.html` renders roughly what the skins already cover, so it is a
+weak regression net on its own. Worth adding:
+
+1. The components from the coverage pass — contextual panels, `.text-*`,
+   pagination, list groups, popovers, `.close`
+2. A narrow-viewport view so `navbar-toggle` is exercised
 3. A real select2 and a datetimepicker
 4. Form validation states
-5. Dashboard widget markup (`grid-stack-item-content > header`), which is where
-   the skins were silently wrong for two rounds
+5. Dashboard widget markup (`grid-stack-item-content > header`), and an
+   icon-on-a-button (`<button class="btn fa fa-x">`) — the two shapes that
+   caused the most rework
 
-A `?compare` mode rendering all three skins side by side in iframes would make
-drift between them obvious at a glance.
+A `?compare` mode rendering all three skins side by side would make drift
+obvious at a glance.
 
 ---
 

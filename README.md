@@ -18,18 +18,21 @@ asset ports.
 | **Protoss** | Chamfered, gold-bracketed | Void blue + keratinous gold, psionic flame | Cinzel + Rajdhani |
 | **Zerg** | Asymmetric, grown, uneven | Creep purple + bone, ichor green, ember orange | Metamorphous + Chakra Petch |
 
-All three are installable, verified, and cover **92 of 92 components** that
-LibreNMS's dark theme styles — including scrollbars and map tiles, which
-upstream does not style at all. Widgets upstream never themed (query-builder,
-datetimepicker, bootstrap-switch) remain stock.
-
-Check the current number yourself:
+All three are installed and verified on a production instance. They cover
+**92 of 92** components LibreNMS's dark theme styles, and **183 of 218** once
+you also count the `styles.css` classes the dark theme never touches — most of
+the remainder being dead Observium-era classes with no references in
+`resources/views`.
 
 ```bash
-./scripts/coverage.sh /opt/librenms
+./scripts/coverage.sh /opt/librenms          # the floor
 ```
 
-[docs/ROADMAP.md](docs/ROADMAP.md) has the prioritised backlog.
+Coverage counts selectors answered, not whether it looks right. The real test
+is [the live audit](#auditing-a-live-instance), which all three skins currently
+pass with zero findings on `/`, `/devices` and `/alert-rules`.
+
+[docs/ROADMAP.md](docs/ROADMAP.md) has the backlog and open decisions.
 
 Verified against LibreNMS master @ `63e0394` (2026-09-17).
 
@@ -137,8 +140,9 @@ The plugin system cannot carry a theme. It exposes exactly five hooks
 Building these surfaced concrete, measurable problems with theming LibreNMS as
 it stands. They are written up in **[docs/FINDINGS.md](docs/FINDINGS.md)** with
 reproducible numbers — that document, not the skins, is the interesting output
-of this project. **[docs/PROPOSAL.md](docs/PROPOSAL.md)** turns it into three
-small, independent upstream changes, ready to post.
+of this project. **[docs/PROPOSAL.md](docs/PROPOSAL.md)** turns it into a
+phased upstream proposal — four small fixes that need no theme system, then the
+token work, then a theme system built on it — ready to post.
 
 ---
 
@@ -155,16 +159,26 @@ python -m http.server 8777
 ```
 
 Switch skins with `?skin=terran` / `?skin=protoss` / `?skin=zerg`, or the
-buttons at the top of the page.
+buttons at the top of the page. `harness/colorway.html` renders a skin's full
+token set and graph ramps.
+
+### Auditing a live instance
+
+The harness cannot show you a gap it does not contain, so the real test is
+**[harness/audit.js](harness/audit.js)** — paste it into devtools on a
+logged-in LibreNMS page with a skin active. It reports light surfaces that
+should not exist and any text below WCAG AA, measured on what the browser
+actually computed.
+
+That is what found the dashboard widget header (its colour lives in a
+JavaScript string), the vendored Leaflet cluster markers, 77 icon buttons whose
+glyphs the skin had broken, and five contrast failures the skins introduced
+themselves. A stylesheet-based check saw none of them.
 
 The harness reproduces LibreNMS's real DOM and loads the real stylesheets in
 the real order from `resources/views/layouts/librenmsv1.blade.php`. Vendored
 CSS and webfonts are gitignored — LibreNMS is GPLv3 and its assets are not
 redistributed here.
-
-Note that the harness renders roughly what the skins already cover, so it is a
-weak regression net — it cannot show you a gap it does not contain. Test on a
-real instance before trusting it.
 
 ---
 
@@ -174,7 +188,9 @@ real instance before trusting it.
 skins/<name>/<name>.css     the skin - token block at top drives everything
 skins/<name>/fonts/         bundled OFL webfonts + licence notices
 skins/<name>/FONTS.md       typography rationale and how to swap faces
-harness/                    static preview, real LibreNMS CSS, real DOM
+harness/index.html          static preview, real LibreNMS CSS, real DOM
+harness/colorway.html       a skin's tokens and graph ramps, rendered
+harness/audit.js            live-page contrast + stock-colour audit
 scripts/install.sh          install a skin onto a LibreNMS host
 scripts/uninstall.sh        remove skins and restore the previous config
 scripts/fetch-fonts.ps1     regenerate the bundled fonts reproducibly
