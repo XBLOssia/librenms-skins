@@ -51,7 +51,7 @@ st = open(sys.argv[1], encoding='utf-8', errors='replace').read()
 tw = open(sys.argv[2], encoding='utf-8', errors='replace').read()
 cls = set()
 for m in re.finditer(r'(^|\})\s*([^{}@]+)\{([^}]*)\}', st, re.M):
-    if re.search(r'\b(background-color|background|color|border-color)\s*:\s*#', m.group(3)):
+    if re.search(r'\b(background-color|background|color|border-color)\s*:\s*(#|rgba?\()', m.group(3)):
         cls.update('.' + c for c in re.findall(r'\.([a-zA-Z][\w-]+)', m.group(2)))
 tw_cls = {'.' + c for c in re.findall(r'\.dark [^{]*?\.([a-zA-Z][\w-]+)', tw)}
 print('\n'.join(sorted(cls - tw_cls)))

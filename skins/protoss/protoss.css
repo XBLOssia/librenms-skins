@@ -1427,22 +1427,39 @@ html.dark .header-text-3 { color: var(--pr-text); }
 /* -----------------------------------------------------------------------------
  * 14d. MAP CLUSTER MARKERS
  *
- * Found by scanning the live authenticated page for light backgrounds, which is
- * the only way this could have surfaced: the rules live in
- * html/css/MarkerCluster.Default.css — a VENDORED Leaflet plugin stylesheet, so
- * they appear in neither coverage denominator (0 hits in tw_dark.css, 0 in
- * styles.css). The world map's numbered bubbles were pastel green/yellow/orange
- * with pure black text, at 0.6 alpha.
+ * Found by scanning the LIVE page for light backgrounds. It could not have
+ * surfaced any other way, and it exposed two blind spots at once:
  *
- * Vendor selectors are (0,1,0) and (0,1,1); `html.dark` makes these (0,2,1).
+ *  1. scripts/coverage.sh only matched colour declarations written as #hex.
+ *     These three classes use rgba() exclusively, so the detector never saw
+ *     them - and they are the ONLY three classes in styles.css in that
+ *     position. The detector now matches rgb()/rgba() too.
+ *  2. An earlier version of this section styled `.marker-cluster-small div`,
+ *     copying vanilla Leaflet.markercluster. LibreNMS builds clusters with
+ *     L.divIcon and puts the child count directly in the element, with NO
+ *     inner div, so those rules matched nothing. Verified live: the element
+ *     reports 0 children.
+ *
+ * The colour prefix comes from map/fullscreen.blade.php, which emits
+ * green/blue/red + "Cluster". Upstream sets `.greenCluster` to black text,
+ * which is why the counts were unreadable on a dark map.
  * -------------------------------------------------------------------------- */
-html.dark .marker-cluster-small        { background-color: rgba(70, 201, 107, .25); }
-html.dark .marker-cluster-small div    { background-color: var(--pr-ok); color: #0b1408; }
-html.dark .marker-cluster-medium       { background-color: rgba(224, 170, 30, .25); }
-html.dark .marker-cluster-medium div   { background-color: var(--pr-warn); color: #17100a; }
-html.dark .marker-cluster-large        { background-color: rgba(207, 58, 47, .25); }
-html.dark .marker-cluster-large div    { background-color: var(--pr-danger); color: #fff; }
-html.dark .marker-cluster div          {
-  border: 1px solid rgba(0, 0, 0, .55);
+html.dark .greenCluster {
+  background-color: var(--pr-ok);
+  color: #0b1408;
+  border-color: transparent;
+}
+html.dark .blueCluster {
+  background-color: var(--pr-psi);
+  color: var(--pr-text-bright);
+  border-color: transparent;
+}
+html.dark .redCluster {
+  background-color: var(--pr-danger);
+  color: #fff;
+  border-color: transparent;
+}
+html.dark .marker-cluster {
   font-weight: 700;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, .35);
 }
