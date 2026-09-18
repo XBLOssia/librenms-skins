@@ -785,13 +785,9 @@ html.dark ::-webkit-scrollbar-thumb {
 html.dark ::-webkit-scrollbar-thumb:hover { background: #6d4457; }
 html.dark ::-webkit-scrollbar-corner { background: #0d060c; }
 
-/* --- Map tiles ------------------------------------------------------------
- * app.css ships `html.dark .leaflet-tile` — the SAME specificity (0,2,1) this
- * skin uses, so source order decides and custom_css wins. Retuned so the map
- * sits in the skin's hue instead of the stock blue-grey. */
-html.dark .leaflet-tile {
-  filter: brightness(0.55) invert(1) contrast(2.6) hue-rotate(265deg) saturate(0.4) brightness(0.68);
-}
+/* --- Map chrome ----------------------------------------------------------
+ * The tile filter itself lives in section 13, retuned after seeing it on a
+ * real map. Only the surrounding controls are set here. */
 html.dark .leaflet-container { background: var(--zg-flesh); }
 html.dark .leaflet-bar a,
 html.dark .leaflet-control-layers,
@@ -1015,4 +1011,158 @@ html.dark .with-nav-tabs.panel-default .nav-tabs > li > a {
 }
 html.dark .with-nav-tabs.panel-default .nav-tabs > li.active > a {
   color: var(--zg-bone);
+}
+
+/* -----------------------------------------------------------------------------
+ * 13. REAL-PAGE FIXES
+ *
+ * Everything here was found by walking a live instance, not the harness. Each
+ * is a case the coverage report could not catch, for a different reason.
+ * -------------------------------------------------------------------------- */
+
+/* --- Dashboard widget title bar -------------------------------------------
+ * The grey bar above every dashboard widget has NO semantic class. It is
+ * built by JavaScript string concatenation in overview/default.blade.php:516:
+ *
+ *   '<header class="tw:bg-gray-200 tw:dark:bg-dark-gray-200 tw:text-gray-800
+ *     tw:dark:text-dark-white-100 tw:p-3 tw:text-center">'
+ *
+ * `.dashboard-widget-title` is only the inner <span>, so styling it leaves the
+ * bar grey. The only handle is the element itself. Nothing in a coverage
+ * report based on stylesheet selectors can find this, because the colour does
+ * not live in a stylesheet — it lives in a JS string.
+ * (Tailwind utilities sit in @layer utilities, so this unlayered rule wins.) */
+html.dark .grid-stack-item-content > header {
+  background: linear-gradient(180deg, #38202f 0%, #241420 100%) !important;
+  border-bottom: 1px solid var(--zg-carapace);
+  color: var(--zg-text-bright) !important;
+  font-family: var(--zg-font-chrome);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+html.dark .grid-stack-item-content > header .dashboard-widget-title {
+  color: var(--zg-text-bright);
+}
+html.dark .grid-stack-item-content > header a,
+html.dark .grid-stack-item-content > header .fade-edit a {
+  color: var(--zg-text-dim);
+}
+html.dark .grid-stack-item-content > header a:hover { color: var(--zg-bone); }
+
+/* --- Contextual table rows (alert rules page) ------------------------------
+ * UPSTREAM CONTRAST BUG, not a gap in this skin. tw_dark.css fills these rows
+ * with saturated mid-tones and leaves the text dark:
+ *
+ *   tr.success #62c462   tr.info #5bc0de   tr.warning #ba6f05   tr.danger #ee5f5b
+ *
+ * On the alert rules page, where most rows carry one of these, the result is
+ * dark body text on bright fills — the worst contrast in the application, and
+ * it is that way in the stock dark theme too.
+ *
+ * Specificity: upstream is `.dark .table > tbody > tr.danger > td` = (0,3,3),
+ * so this needs (0,3,4) — the `html` element qualifier supplies the extra. */
+html.dark .table > thead > tr.success > td, html.dark .table > tbody > tr.success > td,
+html.dark .table > thead > tr.success > th, html.dark .table > tbody > tr.success > th,
+html.dark .table > thead > tr > td.success, html.dark .table > tbody > tr > td.success {
+  background-color: var(--zg-ichor-deep); color: var(--zg-text-bright);
+  box-shadow: inset 4px 0 0 0 var(--zg-ichor);
+}
+html.dark .table > thead > tr.info > td, html.dark .table > tbody > tr.info > td,
+html.dark .table > thead > tr.info > th, html.dark .table > tbody > tr.info > th,
+html.dark .table > thead > tr > td.info, html.dark .table > tbody > tr > td.info {
+  background-color: var(--zg-violet-deep); color: var(--zg-text-bright);
+  box-shadow: inset 4px 0 0 0 var(--zg-violet);
+}
+html.dark .table > thead > tr.warning > td, html.dark .table > tbody > tr.warning > td,
+html.dark .table > thead > tr.warning > th, html.dark .table > tbody > tr.warning > th,
+html.dark .table > thead > tr > td.warning, html.dark .table > tbody > tr > td.warning {
+  background-color: var(--zg-ember-deep); color: var(--zg-text-bright);
+  box-shadow: inset 4px 0 0 0 var(--zg-ember);
+}
+html.dark .table > thead > tr.danger > td, html.dark .table > tbody > tr.danger > td,
+html.dark .table > thead > tr.danger > th, html.dark .table > tbody > tr.danger > th,
+html.dark .table > thead > tr > td.danger, html.dark .table > tbody > tr > td.danger {
+  background-color: var(--zg-blood-deep); color: var(--zg-text-bright);
+  box-shadow: inset 4px 0 0 0 var(--zg-blood);
+}
+
+/* Hover states for the same rows, otherwise they flash back to the bright fill. */
+html.dark .table-hover > tbody > tr.success:hover > td,
+html.dark .table-hover > tbody > tr:hover > td.success { background-color: var(--zg-ichor); color: #0b1408; }
+html.dark .table-hover > tbody > tr.info:hover > td,
+html.dark .table-hover > tbody > tr:hover > td.info { background-color: var(--zg-violet); color: #06111c; }
+html.dark .table-hover > tbody > tr.warning:hover > td,
+html.dark .table-hover > tbody > tr:hover > td.warning { background-color: var(--zg-ember); color: #17100a; }
+html.dark .table-hover > tbody > tr.danger:hover > td,
+html.dark .table-hover > tbody > tr:hover > td.danger { background-color: var(--zg-blood); color: #fff; }
+
+/* Links and code inside those rows have to stay legible against the new fill. */
+html.dark .table > tbody > tr.success > td a, html.dark .table > tbody > tr.info > td a,
+html.dark .table > tbody > tr.warning > td a, html.dark .table > tbody > tr.danger > td a {
+  color: var(--zg-text-bright);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* --- bootstrap-switch (the ON/OFF toggles on alert rules) -----------------
+ * Neither styles.css nor tw_dark.css touches this vendor widget at all, so it
+ * rendered in stock Bootstrap 3 blue/grey. No specificity fight here. */
+html.dark .bootstrap-switch {
+  border-color: var(--zg-carapace);
+  border-radius: var(--zg-grow-sm);
+}
+html.dark .bootstrap-switch .bootstrap-switch-handle-on,
+html.dark .bootstrap-switch .bootstrap-switch-handle-off,
+html.dark .bootstrap-switch .bootstrap-switch-label {
+  font-family: var(--zg-font-data);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+html.dark .bootstrap-switch .bootstrap-switch-label {
+  background-color: var(--zg-flesh-raised);
+  color: var(--zg-text);
+}
+html.dark .bootstrap-switch .bootstrap-switch-handle-on.bootstrap-switch-primary,
+html.dark .bootstrap-switch .bootstrap-switch-handle-on.bootstrap-switch-default {
+  background-color: var(--zg-ichor-deep);
+  color: var(--zg-ichor);
+}
+html.dark .bootstrap-switch .bootstrap-switch-handle-off.bootstrap-switch-default,
+html.dark .bootstrap-switch .bootstrap-switch-handle-off.bootstrap-switch-primary {
+  background-color: var(--zg-blood-deep);
+  color: var(--zg-blood);
+}
+html.dark .bootstrap-switch.bootstrap-switch-focused {
+  border-color: var(--zg-bone);
+  box-shadow: 0 0 0 1px var(--zg-bone);
+}
+
+/* --- Map -------------------------------------------------------------------
+ * Retuned: the previous filter chain washed out to grey. invert + hue-rotate
+ * is the reliable base for a dark map; sepia then tints it toward the skin. */
+html.dark .leaflet-tile {
+  filter: invert(1) hue-rotate(205deg) brightness(0.66) contrast(1.06) saturate(0.45) sepia(0.3);
+}
+
+/* Link lines between sites are Leaflet's default blue. They are SVG in the
+   overlay pane, so CSS can reach them. */
+html.dark .leaflet-overlay-pane path {
+  stroke: var(--zg-bone);
+  stroke-opacity: .85;
+}
+html.dark .leaflet-control-attribution {
+  background: rgba(0, 0, 0, .6) !important;
+  color: var(--zg-text-mute) !important;
+}
+html.dark .leaflet-control-attribution a { color: var(--zg-text-dim) !important; }
+
+/* --- Device list vendor logos ---------------------------------------------
+ * Upstream gives OS logos a light plate so dark logos stay visible. Keep that
+ * (it is there for a reason) but soften it so it reads as inset hardware
+ * rather than a bright sticker. */
+html.dark .device-image,
+html.dark img.os-icon {
+  border-radius: var(--zg-grow-sm);
+  padding: 2px;
 }

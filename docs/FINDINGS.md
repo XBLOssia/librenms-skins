@@ -23,8 +23,13 @@ of this document is to supply the numbers.
    ships `!important` on them via Tailwind's `@apply ... !` syntax.
 4. Graphs have **their own colour system**, unreachable from CSS, keyed off a
    two-value boolean, and bypassed by 149 graph files that hard-code hex anyway.
-5. There is no theme packaging, distribution, or per-user selection mechanism.
-6. **None of this applies to typography.** A full two-face typographic treatment
+5. Some colour **is not in a stylesheet at all** — the dashboard widget title
+   bar is built in a JavaScript string with inline utilities and no class, so
+   no stylesheet audit can find it.
+6. The stock dark theme has its **own contrast bug**: saturated row fills under
+   dark text on the alert rules page. Any theme inherits it.
+7. There is no theme packaging, distribution, or per-user selection mechanism.
+8. **None of this applies to typography.** A full two-face typographic treatment
    needed zero workarounds, because core barely specifies `font-family`. The
    obstacle is not theming — it is 468 hard-coded color literals.
 
@@ -159,6 +164,58 @@ A `@theme` block does exist in the same file, defining
 `--color-dark-gray-100..500` and `--color-dark-white-100..400`. So a partial
 token system is already in place — it just coexists with the literals rather
 than replacing them.
+
+---
+
+## 2b. Some colour is not in a stylesheet at all
+
+The grey bar above every dashboard widget has **no semantic class**. It is
+emitted by JavaScript string concatenation inside a Blade file
+(`resources/views/overview/default.blade.php:516`):
+
+```js
+'<header class="tw:bg-gray-200 tw:dark:bg-dark-gray-200 tw:text-gray-800 ' +
+'tw:dark:text-dark-white-100 tw:p-3 tw:text-center">' +
+'<span class="dashboard-widget-title">' + data.title + '</span>'
+```
+
+`.dashboard-widget-title` — the one named hook — is only the inner `<span>`.
+Styling it leaves the bar grey. The only handle a theme has is the element
+itself: `html.dark .grid-stack-item-content > header`.
+
+This matters beyond one widget. **Any audit based on reading stylesheets cannot
+find this**, because the colour does not live in a stylesheet — it lives in a
+string in a template, assembled at runtime. `scripts/coverage.sh` in this repo
+reported 100% coverage while the most prominent element on the landing page was
+still stock grey.
+
+The fix upstream is trivial and already has precedent: give it a class.
+[PR #20294](https://github.com/librenms/librenms/pull/20294) did exactly that
+for a different element, adding `.widget-header` so the mono theme could reach
+it. The same treatment here would cost one line.
+
+---
+
+## 2c. The stock dark theme has a contrast bug of its own
+
+Not a theming obstacle — a straightforward accessibility defect that any theme
+inherits. `tw_dark.css` fills Bootstrap's contextual table rows with saturated
+mid-tones:
+
+| Row | Fill |
+|---|---|
+| `tr.success` | `#62c462` |
+| `tr.info` | `#5bc0de` |
+| `tr.warning` | `#ba6f05` |
+| `tr.danger` | `#ee5f5b` |
+
+and leaves the text colour alone, so dark body text sits on bright fills. On
+the **alert rules page**, where most rows carry one of these classes, this is
+the worst contrast in the application — and it is that way in the stock dark
+theme, with no custom CSS involved.
+
+Worth fixing upstream independently of any theming work. A theme can only paper
+over it, which is what this repo's skins now do.
 
 ---
 
@@ -347,27 +404,30 @@ a parallel CSS-custom-property system. A proposal should follow that.
 In dependency order. Each is independently shippable and provably
 pixel-identical, which is what makes them reviewable.
 
-1. **Migrate the 149 hard-coded graph files onto `graph_colours.*`.** Entirely
+1. **Give the dashboard widget header a class** and fix the contextual-row
+   contrast (§2b, §2c). Both are small, neither needs the token work, and the
+   second is an accessibility fix that stands on its own.
+2. **Migrate the 149 hard-coded graph files onto `graph_colours.*`.** Entirely
    separate from the CSS work, mechanical, and the abstraction already exists.
    The same pass should retire the inline
    `session('applied_site_style') == 'dark' ? '#x' : '#y'` ternaries (see §5)
    in favour of `rrdgraph_def_text*`, so graphs have one colour source rather
    than three.
-2. **Replace the arbitrary-value literals** (`tw:bg-[#337ab7]` etc.) in
+3. **Replace the arbitrary-value literals** (`tw:bg-[#337ab7]` etc.) in
    `app.css` component classes with `@theme` tokens. Small, contained, high
    symbolic value.
-3. **Drop the `!` modifiers** from `@apply` in component classes, once nothing
+4. **Drop the `!` modifiers** from `@apply` in component classes, once nothing
    depends on them. This alone would let skins stop using `!important`.
-4. **Fold `tw_dark.css`'s 272 literals into the `@theme` block**, area by area,
+5. **Fold `tw_dark.css`'s 272 literals into the `@theme` block**, area by area,
    each PR pixel-identical.
-5. **Normalise `tw_dark.css` to a consistent selector depth.** Today it mixes
+6. **Normalise `tw_dark.css` to a consistent selector depth.** Today it mixes
    `.dark .x` and `.dark .y .x`, which is what makes overriding it require
    reading it first. Even without tokens, a predictable depth would make
    third-party theming tractable.
-6. **Then**, and only then, palette changes and a real theme system become
+7. **Then**, and only then, palette changes and a real theme system become
    cheap.
 
-Steps 1–4 are unglamorous and involve no visible change. That is the point —
+Steps 2–5 are unglamorous and involve no visible change. That is the point —
 and it is exactly the order the maintainer asked for.
 
 ---
