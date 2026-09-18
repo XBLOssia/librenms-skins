@@ -103,6 +103,8 @@ fi
 # --- register it -----------------------------------------------------------
 run "'$LNMS' config:set webui.custom_css '[\"$CSSPATH\"]'"
 
+ok=1
+
 # --- graph colours ---------------------------------------------------------
 # RRDtool renders graph interiors server-side to PNG, so CSS cannot reach them.
 # LibreNMS does expose the palette as config, so a skin can still match.
@@ -120,8 +122,23 @@ if [ -f "$GRAPHCONF" ]; then
 
   gtext="$(grep '^RRDGRAPH_DEF_TEXT_DARK=' "$GRAPHCONF" | cut -d= -f2-)"
   gcolor="$(grep '^RRDGRAPH_DEF_TEXT_COLOR_DARK=' "$GRAPHCONF" | cut -d= -f2-)"
-  [ -n "$gtext" ]  && run "'$LNMS' config:set rrdgraph_def_text_dark '$gtext'"
-  [ -n "$gcolor" ] && run "'$LNMS' config:set rrdgraph_def_text_color_dark '$gcolor'"
+
+  # The `--` is REQUIRED. The value begins with `-c`, which Symfony's console
+  # parser otherwise treats as a short option and aborts with
+  #   The "-c" option does not exist.
+  # LibreNMS's own shipped default for this key has the same shape, so the
+  # setting cannot be round-tripped through `lnms config:set` without it.
+  [ -n "$gtext" ]  && run "'$LNMS' config:set -- rrdgraph_def_text_dark '$gtext'"
+  [ -n "$gcolor" ] && run "'$LNMS' config:set -- rrdgraph_def_text_color_dark '$gcolor'"
+
+  if [ "$DRY" -eq 0 ] && [ -n "$gtext" ]; then
+    if [ "$("$LNMS" config:get rrdgraph_def_text_dark 2>/dev/null)" = "$gtext" ]; then
+      echo "  OK   graph colours applied"
+    else
+      echo "  FAIL graph colours did not take - graphs will keep stock colours"
+      ok=0
+    fi
+  fi
 fi
 
 echo
@@ -132,7 +149,6 @@ fi
 
 # --- verify ----------------------------------------------------------------
 echo "Verifying:"
-ok=1
 if [ -f "$TARGET/$SKIN.css" ]; then echo "  OK   stylesheet readable at $TARGET/$SKIN.css"
 else echo "  FAIL stylesheet not readable at $TARGET/$SKIN.css"; ok=0; fi
 
