@@ -274,7 +274,11 @@ html.dark .dropdown-menu {
   box-shadow: 0 16px 42px rgba(0, 0, 0, .85),
               inset 0 0 26px rgba(0, 0, 0, .5);
   padding: 4px 0;
-  overflow: hidden;
+  /* DO NOT add `overflow: hidden` here, however tempting it is for containing
+     the asymmetric radius. LibreNMS nests `.dropdown-submenu > .dropdown-menu`
+     flyouts that open to the RIGHT of their parent; clipping the parent makes
+     every second-level menu (Devices > All Devices > Power/Network/Wireless)
+     invisible. Broken navigation is not worth tidier corners. */
 }
 
 html.dark .dropdown-menu > li > a {
@@ -701,4 +705,52 @@ html.dark img.graph-image {
   border: 1px solid var(--zg-carapace);
   border-radius: var(--zg-grow-sm);
   box-shadow: var(--zg-membrane);
+}
+
+/* -----------------------------------------------------------------------------
+ * 11. DASHBOARD WIDGETS
+ *
+ * The dashboard is almost entirely these, so leaving them unstyled makes the
+ * landing page look untouched even when every other page is skinned.
+ *
+ * SPECIFICITY NOTE: tw_dark.css uses
+ *     .dark .grid-stack .grid-stack-item-content     -> (0,3,0)
+ * which BEATS this skin's usual `html.dark .thing` (0,2,1). The full descendant
+ * chain has to be repeated to win. This is the case that breaks the "just
+ * prefix html.dark" rule of thumb — see docs/FINDINGS.md section 1.
+ * -------------------------------------------------------------------------- */
+html.dark .gs-w,
+html.dark .grid-stack .grid-stack-item-content {
+  background-color: var(--zg-flesh);
+  background-image: radial-gradient(ellipse 140% 90% at 20% 0%,
+    rgba(109, 68, 87, .2) 0%, transparent 65%);
+  border: 1px solid var(--zg-carapace);
+  border-left-width: 3px;
+  border-radius: var(--zg-grow-md);
+  box-shadow: var(--zg-membrane), 0 5px 18px rgba(0, 0, 0, .55);
+  color: var(--zg-text);
+}
+
+html.dark .dashboard-widget-title,
+html.dark .grid-stack .grid-stack-item-content .widget-header {
+  background-image: var(--zg-veins),
+    linear-gradient(180deg, #38202f 0%, #241420 100%);
+  border-bottom: 2px solid var(--zg-bone-deep);
+  color: var(--zg-bone);
+  font-family: var(--zg-font-chrome);
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+html.dark .widget-alert-totals .label,
+html.dark .widget-availability,
+html.dark .widget-alert {
+  font-family: var(--zg-font-data);
+  font-weight: 700;
+}
+
+/* Flyout submenus must stay visible; never clip a .dropdown-menu. */
+html.dark .dropdown-submenu > .dropdown-menu {
+  border-top-width: 2px;
+  margin-top: -4px;
 }

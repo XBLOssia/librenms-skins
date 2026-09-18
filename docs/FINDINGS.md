@@ -1,7 +1,8 @@
 # Theming LibreNMS: what actually gets in the way
 
-Findings from building the Terran skin. Everything here is measured against
-LibreNMS master @ `63e0394` (2026-09-17) and is reproducible.
+Findings from building three skins and deploying one to a production LibreNMS
+instance. Everything here is measured against master @ `63e0394` and is
+reproducible.
 
 This is not a complaint. The lead maintainer has already identified the same
 root cause and asked for it to be fixed — see [Prior art](#prior-art). The point
@@ -14,12 +15,16 @@ of this document is to supply the numbers.
 1. A theme author's first instinct — write `.panel-heading { ... }` in a custom
    stylesheet — **fails silently half the time**, because `tw_dark.css` styles
    everything at higher specificity.
-2. Some colors **cannot be overridden without `!important`**, because core
+2. Worse, there is **no single specificity that works**. Upstream selectors run
+   two *and* three classes deep, so each component must be checked against the
+   rule it is fighting. Getting this wrong left the **dashboard** — the landing
+   page — unthemed on a live install.
+3. Some colors **cannot be overridden without `!important`**, because core
    ships `!important` on them via Tailwind's `@apply ... !` syntax.
-3. Graph ink **cannot be themed from CSS at all**. RRDtool renders PNGs
-   server-side.
-4. There is no theme packaging, distribution, or per-user selection mechanism.
-5. **None of this applies to typography.** A full two-face typographic treatment
+4. Graphs have **their own colour system**, unreachable from CSS, keyed off a
+   two-value boolean, and bypassed by 149 graph files that hard-code hex anyway.
+5. There is no theme packaging, distribution, or per-user selection mechanism.
+6. **None of this applies to typography.** A full two-face typographic treatment
    needed zero workarounds, because core barely specifies `font-family`. The
    obstacle is not theming — it is 468 hard-coded color literals.
 
@@ -71,6 +76,41 @@ is not documented anywhere. You discover it by wondering why your CSS does
 nothing.
 
 The four that survive even strategy B are the subject of the next section.
+
+### Strategy B is not sufficient either
+
+Found the hard way, on a live install. `tw_dark.css` is not uniformly two
+selectors deep:
+
+```css
+.dark .gs-w,
+.dark .grid-stack .grid-stack-item-content {   /* (0,3,0) */
+    background-color: #353a41;
+}
+```
+
+The second selector is **three** classes deep, so it beats `html.dark .thing`
+(0,2,1). A skin that had internalised "prefix everything with `html.dark`" —
+the rule this document recommended — still silently lost on dashboard widgets,
+and the *dashboard is the landing page*. The most-viewed screen in the
+application was the one that looked least themed.
+
+There is no single specificity that is correct. `html.dark .thing` covers most
+of `tw_dark.css`, but every rule has to be checked against the upstream
+selector it is fighting, and the answer changes per component. The full
+descendant chain has to be mirrored:
+
+```css
+html.dark .grid-stack .grid-stack-item-content { … }   /* (0,3,1) */
+```
+
+The same element also carries `tw:ring-gray-200 tw:dark:ring-dark-gray-200`
+inline in the Blade template. So one element's appearance is defined in two
+places at two specificities, and a theme author must beat both.
+
+**This is the strongest single argument in this document.** Overriding a
+component correctly requires reading upstream's stylesheet first. That is not
+theming; it is reverse-engineering.
 
 ---
 
@@ -183,11 +223,55 @@ The problem is not that theming is hard. The problem is 468 literals.
 
 ---
 
-## 5. Graphs are a separate, harder problem
+## 5. Graphs: a third, parallel colour system
 
-LibreNMS renders RRDtool graphs **server-side to PNG**. CSS variables are
-structurally incapable of touching the ink inside them. A skin can style the
-frame around a graph and nothing else.
+**Correction to an earlier version of this document**, which claimed graph
+interiors were unthemeable. They are themeable — just not from CSS, and not
+from anywhere a theme author would think to look.
+
+LibreNMS renders graphs server-side to PNG with RRDtool, so CSS genuinely
+cannot reach the ink. But `LibreNMS/Data/Graphing/GraphParameters.php`
+(`graphColors()`) reads the palette from config:
+
+```php
+$style = $this->style ?: session('applied_site_style');
+$def_colors = LibrenmsConfig::get($style == 'dark'
+    ? 'rrdgraph_def_text_dark' : 'rrdgraph_def_text');
+```
+
+Those two keys hold a **string of RRDtool flags**:
+
+```
+-c BACK#2e3338 -c SHADEA#EEEEEE00 -c SHADEB#EEEEEE00 -c CANVAS#FFFFFF00
+-c GRID#292929 -c MGRID#2f343e -c FRAME#5e5e5e -c ARROW#5e5e5e
+```
+
+parsed back out with a regex (`/-c ([A-Z]+)#([0-9A-Fa-f]{6,8})/`). So graph
+colour is configurable, which is good — the skins in this repo now ship a
+`graph.conf` per skin and the installer applies it.
+
+What makes this a finding rather than a feature:
+
+1. **It is a third colour system.** CSS custom properties, `tw:` utilities and
+   hex literals govern the page; these flag-strings govern graphs; and neither
+   knows the other exists. Setting a skin's background means editing both, in
+   two unrelated formats, with no mechanism keeping them consistent.
+2. **It is keyed off a boolean.** `$style == 'dark'` selects one of exactly two
+   palettes. A third theme cannot have its own graph colours without
+   overwriting the dark one — which is precisely what this repo's installer has
+   to do, and why it must save and restore the previous values.
+3. **Individual graph files bypass it anyway.** For example
+   `includes/html/graphs/sensor/generic.inc.php`:
+
+```php
+$sensor_color     = session('applied_site_style') == 'dark' ? '#f2f2f2' : '#272b30';
+$background_color = session('applied_site_style') == 'dark' ? '#272b30' : '#ffffff';
+$variance_color   = session('applied_site_style') == 'dark' ? '#3e444c' : '#c5c5c5';
+```
+
+   Three more literals, hardcoded inline, ignoring `rrdgraph_def_text_dark`
+   entirely. 149 graph files hard-code hex this way while 89 use the
+   `graph_colours.*` palettes that already exist.
 
 | | Count |
 |---|---|
@@ -195,12 +279,9 @@ frame around a graph and nothing else.
 | …that use the `graph_colours.*` config palettes | 89 |
 | …that hard-code hex directly | **149** |
 
-The good news is that the abstraction already exists — `graph_colours.blues`,
-`.greens`, `.default`, `.mixed`, `.psychedelic` and others are defined in
-`config_definitions.json` and are config-driven. It is simply unevenly adopted.
-Migrating the 149 stragglers onto the existing palette system is mechanical,
-independent of the CSS work, and would make graphs theme-aware for the first
-time.
+Migrating the 149 stragglers onto the palette system that already exists is
+mechanical, independent of the CSS work, and would make graphs theme-aware for
+the first time in a way a theme could actually drive.
 
 ---
 
@@ -255,6 +336,10 @@ pixel-identical, which is what makes them reviewable.
 
 1. **Migrate the 149 hard-coded graph files onto `graph_colours.*`.** Entirely
    separate from the CSS work, mechanical, and the abstraction already exists.
+   The same pass should retire the inline
+   `session('applied_site_style') == 'dark' ? '#x' : '#y'` ternaries (see §5)
+   in favour of `rrdgraph_def_text*`, so graphs have one colour source rather
+   than three.
 2. **Replace the arbitrary-value literals** (`tw:bg-[#337ab7]` etc.) in
    `app.css` component classes with `@theme` tokens. Small, contained, high
    symbolic value.
@@ -262,7 +347,11 @@ pixel-identical, which is what makes them reviewable.
    depends on them. This alone would let skins stop using `!important`.
 4. **Fold `tw_dark.css`'s 272 literals into the `@theme` block**, area by area,
    each PR pixel-identical.
-5. **Then**, and only then, palette changes and a real theme system become
+5. **Normalise `tw_dark.css` to a consistent selector depth.** Today it mixes
+   `.dark .x` and `.dark .y .x`, which is what makes overriding it require
+   reading it first. Even without tokens, a predictable depth would make
+   third-party theming tractable.
+6. **Then**, and only then, palette changes and a real theme system become
    cheap.
 
 Steps 1–4 are unglamorous and involve no visible change. That is the point —

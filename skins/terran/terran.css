@@ -12,8 +12,8 @@
  *     Preferences -> Theme -> Dark
  *
  * INSTALL
- *   cp terran.css /opt/librenms/html/css/custom/
- *   lnms config:set webui.custom_css '["css/custom/terran.css"]'
+ *   cp -r skins/terran /opt/librenms/html/css/custom/
+ *   lnms config:set webui.custom_css '["css/custom/terran/terran.css"]'
  *
  * WHY EVERY RULE IS PREFIXED `html.dark`
  *   tw_dark.css styles the dark theme with `.dark .thing` (specificity 0,2,0).
@@ -650,4 +650,51 @@ html.dark img.graph-image {
   border: 1px solid #000;
   border-radius: var(--tn-radius);
   box-shadow: var(--tn-bevel);
+}
+
+/* -----------------------------------------------------------------------------
+ * 11. DASHBOARD WIDGETS
+ *
+ * The dashboard is almost entirely these, so leaving them unstyled makes the
+ * landing page look untouched even when every other page is skinned.
+ *
+ * SPECIFICITY NOTE: tw_dark.css uses
+ *     .dark .grid-stack .grid-stack-item-content     -> (0,3,0)
+ * which BEATS this skin's usual `html.dark .thing` (0,2,1). The full descendant
+ * chain has to be repeated to win. This is the case that breaks the "just
+ * prefix html.dark" rule of thumb — see docs/FINDINGS.md section 1.
+ * -------------------------------------------------------------------------- */
+html.dark .gs-w,
+html.dark .grid-stack .grid-stack-item-content {
+  background-color: var(--tn-plate);
+  background-image: linear-gradient(180deg, #1f262b 0%, var(--tn-plate) 100%);
+  border: 1px solid #000;
+  border-radius: var(--tn-radius);
+  box-shadow: var(--tn-bevel), 0 3px 10px rgba(0, 0, 0, .4);
+  color: var(--tn-text);
+}
+
+html.dark .dashboard-widget-title,
+html.dark .grid-stack .grid-stack-item-content .widget-header {
+  background-image: linear-gradient(180deg, #2c343a 0%, #212830 100%);
+  border-bottom: 1px solid #000;
+  color: var(--tn-text-bright);
+  font-family: var(--tn-font-chrome);
+  font-weight: 600;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+/* Widget status chips reuse the label palette but sit on a denser grid. */
+html.dark .widget-alert-totals .label,
+html.dark .widget-availability,
+html.dark .widget-alert {
+  font-family: var(--tn-font-data);
+  letter-spacing: .04em;
+}
+
+/* Flyout submenus must stay visible; never clip a .dropdown-menu. */
+html.dark .dropdown-submenu > .dropdown-menu {
+  border-top-width: 2px;
+  margin-top: -6px;
 }

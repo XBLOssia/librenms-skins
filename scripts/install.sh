@@ -103,6 +103,27 @@ fi
 # --- register it -----------------------------------------------------------
 run "'$LNMS' config:set webui.custom_css '[\"$CSSPATH\"]'"
 
+# --- graph colours ---------------------------------------------------------
+# RRDtool renders graph interiors server-side to PNG, so CSS cannot reach them.
+# LibreNMS does expose the palette as config, so a skin can still match.
+GRAPHCONF="$REPO/skins/$SKIN/graph.conf"
+if [ -f "$GRAPHCONF" ]; then
+  echo
+  echo "Applying graph colours from skins/$SKIN/graph.conf"
+
+  if [ "$DRY" -eq 0 ] && [ ! -f "$CUSTOM/.previous-graph" ]; then
+    {
+      printf 'RRDGRAPH_DEF_TEXT_DARK=%s\n' "$("$LNMS" config:get rrdgraph_def_text_dark 2>/dev/null)"
+      printf 'RRDGRAPH_DEF_TEXT_COLOR_DARK=%s\n' "$("$LNMS" config:get rrdgraph_def_text_color_dark 2>/dev/null)"
+    } > "$CUSTOM/.previous-graph"
+  fi
+
+  gtext="$(grep '^RRDGRAPH_DEF_TEXT_DARK=' "$GRAPHCONF" | cut -d= -f2-)"
+  gcolor="$(grep '^RRDGRAPH_DEF_TEXT_COLOR_DARK=' "$GRAPHCONF" | cut -d= -f2-)"
+  [ -n "$gtext" ]  && run "'$LNMS' config:set rrdgraph_def_text_dark '$gtext'"
+  [ -n "$gcolor" ] && run "'$LNMS' config:set rrdgraph_def_text_color_dark '$gcolor'"
+fi
+
 echo
 if [ "$DRY" -eq 1 ]; then
   echo "Dry run complete. Nothing changed."
