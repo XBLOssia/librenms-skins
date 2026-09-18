@@ -1,0 +1,142 @@
+<!DOCTYPE HTML>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>librenms-skins — colorway reference</title>
+<style>
+  body { margin: 0; padding: 28px 32px 48px; }
+  .cw-head { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
+             margin-bottom: 4px; }
+  .cw-title { font-size: 26px; margin: 0; }
+  .cw-sub { font-size: 13px; opacity: .75; margin: 0 0 22px; }
+  .cw-nav a { display: inline-block; padding: 4px 12px; margin-right: 6px;
+              font-size: 12px; text-transform: uppercase; letter-spacing: .1em;
+              border: 1px solid currentColor; }
+  .cw-group { margin: 26px 0 10px; font-size: 12px; text-transform: uppercase;
+              letter-spacing: .16em; opacity: .8;
+              border-bottom: 1px solid currentColor; padding-bottom: 5px; }
+  .cw-grid { display: grid; gap: 10px;
+             grid-template-columns: repeat(auto-fill, minmax(196px, 1fr)); }
+  .cw-chip { border: 1px solid rgba(255,255,255,.18); overflow: hidden; }
+  .cw-swatch { height: 52px; }
+  .cw-meta { padding: 7px 9px; font: 11px/1.5 ui-monospace, monospace; }
+  .cw-name { display: block; opacity: .95; }
+  .cw-val  { display: block; opacity: .6; }
+  .cw-ramp { display: flex; height: 40px; border: 1px solid rgba(255,255,255,.18); }
+  .cw-ramp span { flex: 1; }
+  .cw-ramps { display: grid; gap: 14px;
+              grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+  .cw-ramplabel { font: 11px/1.8 ui-monospace, monospace; opacity: .75; }
+  .cw-note { font-size: 12px; opacity: .7; max-width: 62ch; margin: 14px 0 0; }
+</style>
+<script>
+  var SKINS = ['terran', 'protoss', 'zerg'];
+  var skin = (new URLSearchParams(location.search).get('skin') || 'zerg').toLowerCase();
+  if (SKINS.indexOf(skin) === -1) skin = 'zerg';
+  document.write('<link rel="stylesheet" href="../skins/' + skin + '/' + skin + '.css">');
+</script>
+</head>
+<body>
+
+<div class="cw-head">
+  <h1 class="cw-title" id="cw-name"></h1>
+  <span class="cw-nav" id="cw-nav"></span>
+</div>
+<p class="cw-sub">Colorway reference — every design token the skin defines, read live from its stylesheet.</p>
+
+<div id="cw-body"></div>
+
+<div class="cw-group">Graph series ramps</div>
+<p class="cw-note">RRDtool renders graphs server-side, so these are not CSS. They
+live in <code>skins/&lt;skin&gt;/graph.conf</code> and are applied to LibreNMS
+config by the installer. Shown here for reference.</p>
+<div class="cw-ramps" id="cw-ramps"></div>
+
+<script>
+const PREFIX = { terran: 'tn', protoss: 'pr', zerg: 'zg' };
+const p = PREFIX[skin];
+
+document.getElementById('cw-name').textContent = skin.toUpperCase();
+document.getElementById('cw-nav').innerHTML = SKINS.map(s =>
+  `<a href="?skin=${s}" style="${s === skin ? 'font-weight:700' : 'opacity:.6'}">${s}</a>`).join('');
+
+// Pull every --<prefix>-* custom property straight out of the skin's stylesheet.
+function tokens() {
+  const out = [];
+  for (const sheet of document.styleSheets) {
+    let rules; try { rules = sheet.cssRules; } catch (e) { continue; }
+    if (!rules) continue;
+    for (const r of rules) {
+      if (r.selectorText !== ':root') continue;
+      for (const prop of r.style) {
+        if (prop.startsWith(`--${p}-`)) {
+          out.push([prop, r.style.getPropertyValue(prop).trim()]);
+        }
+      }
+    }
+  }
+  return out;
+}
+
+const GROUPS = [
+  ['Surfaces',   v => /void|hull|plate|panel|flesh|raised|hi$|carapace(?!-lit)/.test(v)],
+  ['Structure',  v => /edge|rivet|bone|gold(?!-)|accent|carapace-lit/.test(v)],
+  ['Text',       v => /text/.test(v)],
+  ['Status',     v => /green|red|led|ichor|ember|blood|psi|violet|crystal|ok|warn|danger|info|console|hazard|amber/.test(v)],
+];
+
+const body = document.getElementById('cw-body');
+const all = tokens();
+const shown = new Set();
+
+function chip(name, val) {
+  const isColor = /^#|^rgb/.test(val);
+  return `<div class="cw-chip">
+    <div class="cw-swatch" style="background:${isColor ? val : val}"></div>
+    <div class="cw-meta"><span class="cw-name">${name}</span><span class="cw-val">${val.length > 30 ? val.slice(0, 30) + '…' : val}</span></div>
+  </div>`;
+}
+
+for (const [label, test] of GROUPS) {
+  const items = all.filter(([n, v]) => /^#|^rgb/.test(v) && test(n) && !shown.has(n));
+  if (!items.length) continue;
+  items.forEach(([n]) => shown.add(n));
+  body.insertAdjacentHTML('beforeend',
+    `<div class="cw-group">${label}</div><div class="cw-grid">${items.map(([n, v]) => chip(n, v)).join('')}</div>`);
+}
+
+// Anything left that is a colour but did not match a group.
+const rest = all.filter(([n, v]) => /^#|^rgb/.test(v) && !shown.has(n));
+if (rest.length) {
+  body.insertAdjacentHTML('beforeend',
+    `<div class="cw-group">Other</div><div class="cw-grid">${rest.map(([n, v]) => chip(n, v)).join('')}</div>`);
+}
+
+// Non-colour tokens (geometry, shadows, fonts) listed as text.
+const nonColour = all.filter(([n, v]) => !/^#|^rgb/.test(v));
+if (nonColour.length) {
+  body.insertAdjacentHTML('beforeend',
+    `<div class="cw-group">Geometry &amp; type</div>
+     <div class="cw-meta" style="font-size:11px;line-height:1.9">` +
+    nonColour.map(([n, v]) => `<div><span style="opacity:.95">${n}</span>: <span style="opacity:.6">${v.length > 90 ? v.slice(0, 90) + '…' : v}</span></div>`).join('') +
+    `</div>`);
+}
+
+// Graph ramps are fetched from the skin's graph.conf.
+fetch(`../skins/${skin}/graph.conf`).then(r => r.text()).then(text => {
+  const rows = text.split('\n')
+    .filter(l => l.startsWith('graph_colours.'))
+    .map(l => [l.slice(0, l.indexOf('=')), JSON.parse(l.slice(l.indexOf('=') + 1))]);
+  document.getElementById('cw-ramps').innerHTML = rows.map(([k, cols]) =>
+    `<div><div class="cw-ramplabel">${k}</div>
+     <div class="cw-ramp">${cols.map(c => `<span style="background:#${c}"></span>`).join('')}</div></div>`
+  ).join('');
+}).catch(() => {
+  document.getElementById('cw-ramps').innerHTML =
+    '<div class="cw-ramplabel">graph.conf not readable from here</div>';
+});
+</script>
+
+</body>
+</html>
