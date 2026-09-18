@@ -6,6 +6,36 @@ Written against LibreNMS master @ `63e0394`. Target host: `REDACTED-HOST`.
 
 ---
 
+## Deployed instances
+
+| Host | Skin | LibreNMS version | Installed | Mode |
+|---|---|---|---|---|
+| `REDACTED-HOST` | zerg | `26.8.1-147-g63e0394bd1` | 2026-09-18 | link |
+
+The host version matches the commit the skins were developed and verified
+against exactly, so there is no selector drift to account for.
+
+Layout on that host:
+
+```
+/opt/librenms-skins                          repo, owned librenms:librenms
+/opt/librenms/html/css/custom/zerg   ->      /opt/librenms-skins/skins/zerg
+webui.custom_css                     =       ["css/custom/zerg/zerg.css"]
+```
+
+Files were uploaded over SFTP rather than cloned, because the repo is private
+and that avoids putting a git credential on the monitoring host. The trade-off
+is that `git pull` will not update it in place — re-upload, or add a deploy key
+and convert `/opt/librenms-skins` into a real clone.
+
+To switch the active skin on that host:
+
+```bash
+sudo -u librenms /opt/librenms-skins/scripts/install.sh terran
+```
+
+---
+
 ## Does this survive `daily.sh`?
 
 **Yes, and unlike a core-file patch it does so by design rather than by luck.**
