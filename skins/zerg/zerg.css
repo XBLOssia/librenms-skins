@@ -754,3 +754,265 @@ html.dark .dropdown-submenu > .dropdown-menu {
   border-top-width: 2px;
   margin-top: -4px;
 }
+
+/* -----------------------------------------------------------------------------
+ * 12. COVERAGE PASS
+ *
+ * Everything below closes a gap found by scripts/coverage.sh — components
+ * tw_dark.css styles that this skin previously did not, and which therefore
+ * showed stock dark-theme colours sitting inside the skin.
+ * -------------------------------------------------------------------------- */
+
+/* --- Scrollbars -----------------------------------------------------------
+ * LibreNMS styles no scrollbars at all, so every scrollable widget renders
+ * the browser default — a bright light trough against a dark UI. This is the
+ * most conspicuous remaining stock element on a dashboard, and because
+ * upstream never touches it there is no specificity fight. */
+html.dark * {
+  scrollbar-width: thin;
+  scrollbar-color: #43273a #0d060c;
+}
+html.dark ::-webkit-scrollbar { width: 11px; height: 11px; }
+html.dark ::-webkit-scrollbar-track {
+  background: #0d060c;
+  border-left: 1px solid var(--zg-carapace);
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: #43273a;
+  border: 2px solid #0d060c;
+  border-radius: 6px;
+}
+html.dark ::-webkit-scrollbar-thumb:hover { background: #6d4457; }
+html.dark ::-webkit-scrollbar-corner { background: #0d060c; }
+
+/* --- Map tiles ------------------------------------------------------------
+ * app.css ships `html.dark .leaflet-tile` — the SAME specificity (0,2,1) this
+ * skin uses, so source order decides and custom_css wins. Retuned so the map
+ * sits in the skin's hue instead of the stock blue-grey. */
+html.dark .leaflet-tile {
+  filter: brightness(0.55) invert(1) contrast(2.6) hue-rotate(265deg) saturate(0.4) brightness(0.68);
+}
+html.dark .leaflet-container { background: var(--zg-flesh); }
+html.dark .leaflet-bar a,
+html.dark .leaflet-control-layers,
+html.dark .leaflet-popup-content-wrapper,
+html.dark .leaflet-popup-tip {
+  background-color: var(--zg-flesh-raised);
+  color: var(--zg-text);
+  border-color: var(--zg-carapace);
+}
+
+/* --- Contextual panels ----------------------------------------------------
+ * Only .panel-default was styled before, so a success/warning/danger panel
+ * reverted to stock. */
+html.dark .panel-primary,
+html.dark .panel-success,
+html.dark .panel-info,
+html.dark .panel-warning,
+html.dark .panel-danger {
+  background-color: var(--zg-flesh);
+}
+html.dark .panel-primary  > .panel-heading { background: var(--zg-violet-deep); border-color: var(--zg-violet); color: var(--zg-text-bright); }
+html.dark .panel-success  > .panel-heading { background: var(--zg-ichor-deep);   border-color: var(--zg-ichor);   color: var(--zg-text-bright); }
+html.dark .panel-info     > .panel-heading { background: var(--zg-violet-deep); border-color: var(--zg-violet); color: var(--zg-text-bright); }
+html.dark .panel-warning  > .panel-heading { background: var(--zg-ember-deep); border-color: var(--zg-ember); color: var(--zg-text-bright); }
+html.dark .panel-danger   > .panel-heading { background: var(--zg-blood-deep); border-color: var(--zg-blood); color: var(--zg-text-bright); }
+
+html.dark .panel-primary,
+html.dark .panel-info    { border-color: var(--zg-violet); }
+html.dark .panel-success { border-color: var(--zg-ichor); }
+html.dark .panel-warning { border-color: var(--zg-ember); }
+html.dark .panel-danger  { border-color: var(--zg-blood); }
+
+/* --- Contextual text and backgrounds -------------------------------------- */
+html.dark .text-muted   { color: var(--zg-text-mute) !important; }
+html.dark .text-primary { color: var(--zg-violet); }
+html.dark .text-info    { color: var(--zg-violet); }
+html.dark .text-success { color: var(--zg-ichor); }
+html.dark .text-warning { color: var(--zg-ember); }
+html.dark .text-danger  { color: var(--zg-blood); }
+
+html.dark .bg-success { background-color: var(--zg-ichor-deep) !important;     color: var(--zg-text); }
+html.dark .bg-info    { background-color: var(--zg-violet-deep) !important;   color: var(--zg-text); }
+html.dark .bg-danger  { background-color: var(--zg-blood-deep) !important; color: var(--zg-text); }
+
+html.dark mark,
+html.dark .mark {
+  background-color: var(--zg-bone);
+  color: #14100a;
+  padding: 0 .25em;
+  border-radius: var(--zg-grow-sm);
+}
+
+/* --- Headings -------------------------------------------------------------- */
+html.dark h1, html.dark h2, html.dark h3,
+html.dark h4, html.dark h5, html.dark h6,
+html.dark .h1, html.dark .h2, html.dark .h3,
+html.dark .h4, html.dark .h5, html.dark .h6 {
+  color: var(--zg-text-bright);
+  font-family: var(--zg-font-chrome);
+}
+
+/* --- Stragglers from sets already styled ---------------------------------- */
+html.dark .label-primary,
+html.dark .badge-primary { background-color: var(--zg-violet-deep); color: var(--zg-text-bright); }
+
+html.dark .btn-info,
+html.dark .lnms-btn-info {
+  background-color: var(--zg-violet-deep) !important;
+  border-color: var(--zg-violet) !important;
+  color: var(--zg-text-bright) !important;
+}
+
+html.dark .list-group-item {
+  background-color: var(--zg-flesh);
+  border-color: var(--zg-carapace);
+  color: var(--zg-text);
+}
+html.dark .list-group-item:hover { background-color: var(--zg-flesh-hi); }
+html.dark .list-group-item-danger {
+  background-color: var(--zg-blood-deep);
+  border-color: var(--zg-blood);
+  color: var(--zg-text);
+}
+
+/* --- Pagination ------------------------------------------------------------ */
+html.dark .pagination > li > a,
+html.dark .pagination > li > span {
+  background-color: var(--zg-flesh-raised);
+  border-color: var(--zg-carapace);
+  color: var(--zg-text-dim);
+}
+html.dark .pagination > li > a:hover {
+  background-color: var(--zg-flesh-hi);
+  border-color: var(--zg-bone);
+  color: var(--zg-text-bright);
+}
+html.dark .pagination > .active > a,
+html.dark .pagination > .active > span,
+html.dark .pagination > .active > a:hover {
+  background-color: var(--zg-flesh-hi);
+  border-color: var(--zg-bone);
+  color: var(--zg-bone);
+}
+html.dark .pagination > .disabled > span,
+html.dark .pagination > .disabled > a {
+  background-color: var(--zg-flesh);
+  border-color: var(--zg-carapace);
+  color: var(--zg-text-mute);
+}
+
+/* --- Dismiss buttons, popovers, mobile menu -------------------------------- */
+html.dark .close {
+  color: var(--zg-text-dim);
+  text-shadow: none;
+  opacity: .8;
+}
+html.dark .close:hover { color: var(--zg-blood); opacity: 1; }
+
+html.dark .popover {
+  background-color: var(--zg-flesh-raised);
+  border-color: var(--zg-carapace);
+  color: var(--zg-text);
+}
+html.dark .popover-title {
+  background-color: var(--zg-flesh);
+  border-bottom-color: var(--zg-carapace);
+  color: var(--zg-bone);
+  font-family: var(--zg-font-chrome);
+}
+html.dark .popover.top > .arrow::after    { border-top-color: var(--zg-flesh-raised); }
+html.dark .popover.bottom > .arrow::after { border-bottom-color: var(--zg-flesh-raised); }
+html.dark .popover.left > .arrow::after   { border-left-color: var(--zg-flesh-raised); }
+html.dark .popover.right > .arrow::after  { border-right-color: var(--zg-flesh-raised); }
+
+/* Invisible on desktop, the only navigation on a phone. */
+html.dark .navbar-default .navbar-toggle {
+  border-color: var(--zg-carapace);
+  background-color: var(--zg-flesh-raised);
+}
+html.dark .navbar-default .navbar-toggle:hover,
+html.dark .navbar-default .navbar-toggle:focus { background-color: var(--zg-flesh-hi); }
+html.dark .navbar-default .navbar-toggle .icon-bar { background-color: var(--zg-bone); }
+
+/* --- Tables: bordered / responsive ----------------------------------------- */
+html.dark .table-bordered,
+html.dark .table-bordered > thead > tr > th,
+html.dark .table-bordered > tbody > tr > td,
+html.dark .table-bordered > tbody > tr > th {
+  border-color: var(--zg-carapace);
+}
+html.dark .table-responsive { border-color: var(--zg-carapace); }
+
+/* --- Form validation states ------------------------------------------------ */
+html.dark .help-block { color: var(--zg-text-mute); }
+html.dark .has-error .form-control    { border-color: var(--zg-blood); }
+html.dark .has-error .control-label,
+html.dark .has-error .help-block      { color: var(--zg-blood); }
+html.dark .has-success .form-control  { border-color: var(--zg-ichor); }
+html.dark .has-success .control-label { color: var(--zg-ichor); }
+
+/* --- LibreNMS-specific classes --------------------------------------------- */
+html.dark .device-overview,
+html.dark .device-availability,
+html.dark .service-availability {
+  background-color: var(--zg-flesh);
+  color: var(--zg-text);
+}
+html.dark .expandable { background-color: var(--zg-flesh-raised); }
+html.dark .interface-upup { color: var(--zg-ichor); }
+
+/* Legacy colour classes, still used on a few pages. */
+html.dark .blue { color: var(--zg-violet) !important; }
+html.dark .grey { color: var(--zg-text-mute) !important; }
+html.dark .red  { color: var(--zg-blood) !important; }
+
+/* --- select2 dropdowns ------------------------------------------------------
+ * Generated markup, used widely on settings and search forms. */
+html.dark .select2-container--bootstrap .select2-selection,
+html.dark .select2-container--bootstrap .select2-dropdown {
+  background-color: var(--zg-flesh);
+  border-color: var(--zg-carapace);
+  color: var(--zg-text);
+}
+html.dark .select2-container--bootstrap .select2-selection__rendered { color: var(--zg-text); }
+html.dark .select2-container--bootstrap .select2-results__option {
+  background-color: var(--zg-flesh);
+  color: var(--zg-text-dim);
+}
+html.dark .select2-container--bootstrap .select2-results__option--highlighted {
+  background-color: var(--zg-flesh-hi);
+  color: var(--zg-text-bright);
+}
+html.dark .select2-container--bootstrap .select2-search__field {
+  background-color: var(--zg-flesh);
+  border-color: var(--zg-carapace);
+  color: var(--zg-text);
+}
+
+/* --- Legacy overlib tooltips ------------------------------------------------ */
+html.dark #overDiv,
+html.dark .overlib,
+html.dark .overlib-contents {
+  background-color: var(--zg-flesh-raised) !important;
+  border-color: var(--zg-carapace) !important;
+  color: var(--zg-text) !important;
+}
+html.dark .overlib-text { color: var(--zg-text) !important; }
+
+/* --- Final two coverage gaps ------------------------------------------------
+ * `.with-nav-tabs` is a THIRD instance of the escalating-specificity problem:
+ * upstream ships
+ *     .dark .with-nav-tabs.panel-default .nav-tabs > li > a     (0,4,2)
+ * so it needs the whole chain mirrored, not an `html.dark` prefix. */
+html.dark .page-availability-report-select {
+  color: var(--zg-text);
+  background-color: var(--zg-flesh);
+}
+
+html.dark .with-nav-tabs.panel-default .nav-tabs > li > a {
+  color: var(--zg-text-dim);
+}
+html.dark .with-nav-tabs.panel-default .nav-tabs > li.active > a {
+  color: var(--zg-bone);
+}

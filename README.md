@@ -18,11 +18,10 @@ asset ports.
 | **Protoss** | Chamfered, gold-bracketed | Void blue + keratinous gold, psionic flame | Cinzel + Rajdhani |
 | **Zerg** | Asymmetric, grown, uneven | Creep purple + bone, ichor green, ember orange | Metamorphous + Chakra Petch |
 
-All three are installable and verified. They cover the application frame —
-navbar, panels, tables, buttons, forms, alerts, labels, tabs, modals — which is
-**40 of the 92 components** LibreNMS's dark theme styles. Contextual panel
-variants, pagination, select2 dropdowns and the mobile menu are not yet
-skinned and will show stock dark-theme colours.
+All three are installable, verified, and cover **92 of 92 components** that
+LibreNMS's dark theme styles — including scrollbars and map tiles, which
+upstream does not style at all. Widgets upstream never themed (query-builder,
+datetimepicker, bootstrap-switch) remain stock.
 
 Check the current number yourself:
 

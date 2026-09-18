@@ -698,3 +698,265 @@ html.dark .dropdown-submenu > .dropdown-menu {
   border-top-width: 2px;
   margin-top: -6px;
 }
+
+/* -----------------------------------------------------------------------------
+ * 12. COVERAGE PASS
+ *
+ * Everything below closes a gap found by scripts/coverage.sh — components
+ * tw_dark.css styles that this skin previously did not, and which therefore
+ * showed stock dark-theme colours sitting inside the skin.
+ * -------------------------------------------------------------------------- */
+
+/* --- Scrollbars -----------------------------------------------------------
+ * LibreNMS styles no scrollbars at all, so every scrollable widget renders
+ * the browser default — a bright light trough against a dark UI. This is the
+ * most conspicuous remaining stock element on a dashboard, and because
+ * upstream never touches it there is no specificity fight. */
+html.dark * {
+  scrollbar-width: thin;
+  scrollbar-color: #3b444c #10151a;
+}
+html.dark ::-webkit-scrollbar { width: 11px; height: 11px; }
+html.dark ::-webkit-scrollbar-track {
+  background: #10151a;
+  border-left: 1px solid var(--tn-edge);
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: #3b444c;
+  border: 2px solid #10151a;
+  border-radius: 6px;
+}
+html.dark ::-webkit-scrollbar-thumb:hover { background: #55646f; }
+html.dark ::-webkit-scrollbar-corner { background: #10151a; }
+
+/* --- Map tiles ------------------------------------------------------------
+ * app.css ships `html.dark .leaflet-tile` — the SAME specificity (0,2,1) this
+ * skin uses, so source order decides and custom_css wins. Retuned so the map
+ * sits in the skin's hue instead of the stock blue-grey. */
+html.dark .leaflet-tile {
+  filter: brightness(0.55) invert(1) contrast(2.5) hue-rotate(185deg) saturate(0.22) brightness(0.72);
+}
+html.dark .leaflet-container { background: var(--tn-plate); }
+html.dark .leaflet-bar a,
+html.dark .leaflet-control-layers,
+html.dark .leaflet-popup-content-wrapper,
+html.dark .leaflet-popup-tip {
+  background-color: var(--tn-plate-raised);
+  color: var(--tn-text);
+  border-color: var(--tn-edge);
+}
+
+/* --- Contextual panels ----------------------------------------------------
+ * Only .panel-default was styled before, so a success/warning/danger panel
+ * reverted to stock. */
+html.dark .panel-primary,
+html.dark .panel-success,
+html.dark .panel-info,
+html.dark .panel-warning,
+html.dark .panel-danger {
+  background-color: var(--tn-plate);
+}
+html.dark .panel-primary  > .panel-heading { background: var(--tn-console-deep); border-color: var(--tn-console); color: var(--tn-text-bright); }
+html.dark .panel-success  > .panel-heading { background: var(--tn-green-deep);   border-color: var(--tn-green);   color: var(--tn-text-bright); }
+html.dark .panel-info     > .panel-heading { background: var(--tn-console-deep); border-color: var(--tn-console); color: var(--tn-text-bright); }
+html.dark .panel-warning  > .panel-heading { background: var(--tn-amber-deep); border-color: var(--tn-hazard); color: var(--tn-text-bright); }
+html.dark .panel-danger   > .panel-heading { background: var(--tn-red-deep); border-color: var(--tn-red); color: var(--tn-text-bright); }
+
+html.dark .panel-primary,
+html.dark .panel-info    { border-color: var(--tn-console); }
+html.dark .panel-success { border-color: var(--tn-green); }
+html.dark .panel-warning { border-color: var(--tn-hazard); }
+html.dark .panel-danger  { border-color: var(--tn-red); }
+
+/* --- Contextual text and backgrounds -------------------------------------- */
+html.dark .text-muted   { color: var(--tn-text-mute) !important; }
+html.dark .text-primary { color: var(--tn-console); }
+html.dark .text-info    { color: var(--tn-console); }
+html.dark .text-success { color: var(--tn-green); }
+html.dark .text-warning { color: var(--tn-hazard); }
+html.dark .text-danger  { color: var(--tn-red); }
+
+html.dark .bg-success { background-color: var(--tn-green-deep) !important;     color: var(--tn-text); }
+html.dark .bg-info    { background-color: var(--tn-console-deep) !important;   color: var(--tn-text); }
+html.dark .bg-danger  { background-color: var(--tn-red-deep) !important; color: var(--tn-text); }
+
+html.dark mark,
+html.dark .mark {
+  background-color: var(--tn-hazard);
+  color: #14100a;
+  padding: 0 .25em;
+  border-radius: var(--tn-radius);
+}
+
+/* --- Headings -------------------------------------------------------------- */
+html.dark h1, html.dark h2, html.dark h3,
+html.dark h4, html.dark h5, html.dark h6,
+html.dark .h1, html.dark .h2, html.dark .h3,
+html.dark .h4, html.dark .h5, html.dark .h6 {
+  color: var(--tn-text-bright);
+  font-family: var(--tn-font-chrome);
+}
+
+/* --- Stragglers from sets already styled ---------------------------------- */
+html.dark .label-primary,
+html.dark .badge-primary { background-color: var(--tn-console-deep); color: var(--tn-text-bright); }
+
+html.dark .btn-info,
+html.dark .lnms-btn-info {
+  background-color: var(--tn-console-deep) !important;
+  border-color: var(--tn-console) !important;
+  color: var(--tn-text-bright) !important;
+}
+
+html.dark .list-group-item {
+  background-color: var(--tn-plate);
+  border-color: var(--tn-edge);
+  color: var(--tn-text);
+}
+html.dark .list-group-item:hover { background-color: var(--tn-plate-hi); }
+html.dark .list-group-item-danger {
+  background-color: var(--tn-red-deep);
+  border-color: var(--tn-red);
+  color: var(--tn-text);
+}
+
+/* --- Pagination ------------------------------------------------------------ */
+html.dark .pagination > li > a,
+html.dark .pagination > li > span {
+  background-color: var(--tn-plate-raised);
+  border-color: var(--tn-edge);
+  color: var(--tn-text-dim);
+}
+html.dark .pagination > li > a:hover {
+  background-color: var(--tn-plate-hi);
+  border-color: var(--tn-hazard);
+  color: var(--tn-text-bright);
+}
+html.dark .pagination > .active > a,
+html.dark .pagination > .active > span,
+html.dark .pagination > .active > a:hover {
+  background-color: var(--tn-plate-hi);
+  border-color: var(--tn-hazard);
+  color: var(--tn-hazard);
+}
+html.dark .pagination > .disabled > span,
+html.dark .pagination > .disabled > a {
+  background-color: var(--tn-plate);
+  border-color: var(--tn-edge);
+  color: var(--tn-text-mute);
+}
+
+/* --- Dismiss buttons, popovers, mobile menu -------------------------------- */
+html.dark .close {
+  color: var(--tn-text-dim);
+  text-shadow: none;
+  opacity: .8;
+}
+html.dark .close:hover { color: var(--tn-red); opacity: 1; }
+
+html.dark .popover {
+  background-color: var(--tn-plate-raised);
+  border-color: var(--tn-edge);
+  color: var(--tn-text);
+}
+html.dark .popover-title {
+  background-color: var(--tn-plate);
+  border-bottom-color: var(--tn-edge);
+  color: var(--tn-hazard);
+  font-family: var(--tn-font-chrome);
+}
+html.dark .popover.top > .arrow::after    { border-top-color: var(--tn-plate-raised); }
+html.dark .popover.bottom > .arrow::after { border-bottom-color: var(--tn-plate-raised); }
+html.dark .popover.left > .arrow::after   { border-left-color: var(--tn-plate-raised); }
+html.dark .popover.right > .arrow::after  { border-right-color: var(--tn-plate-raised); }
+
+/* Invisible on desktop, the only navigation on a phone. */
+html.dark .navbar-default .navbar-toggle {
+  border-color: var(--tn-edge);
+  background-color: var(--tn-plate-raised);
+}
+html.dark .navbar-default .navbar-toggle:hover,
+html.dark .navbar-default .navbar-toggle:focus { background-color: var(--tn-plate-hi); }
+html.dark .navbar-default .navbar-toggle .icon-bar { background-color: var(--tn-hazard); }
+
+/* --- Tables: bordered / responsive ----------------------------------------- */
+html.dark .table-bordered,
+html.dark .table-bordered > thead > tr > th,
+html.dark .table-bordered > tbody > tr > td,
+html.dark .table-bordered > tbody > tr > th {
+  border-color: var(--tn-edge);
+}
+html.dark .table-responsive { border-color: var(--tn-edge); }
+
+/* --- Form validation states ------------------------------------------------ */
+html.dark .help-block { color: var(--tn-text-mute); }
+html.dark .has-error .form-control    { border-color: var(--tn-red); }
+html.dark .has-error .control-label,
+html.dark .has-error .help-block      { color: var(--tn-red); }
+html.dark .has-success .form-control  { border-color: var(--tn-green); }
+html.dark .has-success .control-label { color: var(--tn-green); }
+
+/* --- LibreNMS-specific classes --------------------------------------------- */
+html.dark .device-overview,
+html.dark .device-availability,
+html.dark .service-availability {
+  background-color: var(--tn-plate);
+  color: var(--tn-text);
+}
+html.dark .expandable { background-color: var(--tn-plate-raised); }
+html.dark .interface-upup { color: var(--tn-green); }
+
+/* Legacy colour classes, still used on a few pages. */
+html.dark .blue { color: var(--tn-console) !important; }
+html.dark .grey { color: var(--tn-text-mute) !important; }
+html.dark .red  { color: var(--tn-red) !important; }
+
+/* --- select2 dropdowns ------------------------------------------------------
+ * Generated markup, used widely on settings and search forms. */
+html.dark .select2-container--bootstrap .select2-selection,
+html.dark .select2-container--bootstrap .select2-dropdown {
+  background-color: var(--tn-plate);
+  border-color: var(--tn-edge);
+  color: var(--tn-text);
+}
+html.dark .select2-container--bootstrap .select2-selection__rendered { color: var(--tn-text); }
+html.dark .select2-container--bootstrap .select2-results__option {
+  background-color: var(--tn-plate);
+  color: var(--tn-text-dim);
+}
+html.dark .select2-container--bootstrap .select2-results__option--highlighted {
+  background-color: var(--tn-plate-hi);
+  color: var(--tn-text-bright);
+}
+html.dark .select2-container--bootstrap .select2-search__field {
+  background-color: var(--tn-plate);
+  border-color: var(--tn-edge);
+  color: var(--tn-text);
+}
+
+/* --- Legacy overlib tooltips ------------------------------------------------ */
+html.dark #overDiv,
+html.dark .overlib,
+html.dark .overlib-contents {
+  background-color: var(--tn-plate-raised) !important;
+  border-color: var(--tn-edge) !important;
+  color: var(--tn-text) !important;
+}
+html.dark .overlib-text { color: var(--tn-text) !important; }
+
+/* --- Final two coverage gaps ------------------------------------------------
+ * `.with-nav-tabs` is a THIRD instance of the escalating-specificity problem:
+ * upstream ships
+ *     .dark .with-nav-tabs.panel-default .nav-tabs > li > a     (0,4,2)
+ * so it needs the whole chain mirrored, not an `html.dark` prefix. */
+html.dark .page-availability-report-select {
+  color: var(--tn-text);
+  background-color: var(--tn-plate);
+}
+
+html.dark .with-nav-tabs.panel-default .nav-tabs > li > a {
+  color: var(--tn-text-dim);
+}
+html.dark .with-nav-tabs.panel-default .nav-tabs > li.active > a {
+  color: var(--tn-hazard);
+}

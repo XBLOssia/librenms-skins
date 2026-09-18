@@ -770,3 +770,265 @@ html.dark .dropdown-submenu > .dropdown-menu {
   border-top-width: 2px;
   margin-top: -4px;
 }
+
+/* -----------------------------------------------------------------------------
+ * 12. COVERAGE PASS
+ *
+ * Everything below closes a gap found by scripts/coverage.sh — components
+ * tw_dark.css styles that this skin previously did not, and which therefore
+ * showed stock dark-theme colours sitting inside the skin.
+ * -------------------------------------------------------------------------- */
+
+/* --- Scrollbars -----------------------------------------------------------
+ * LibreNMS styles no scrollbars at all, so every scrollable widget renders
+ * the browser default — a bright light trough against a dark UI. This is the
+ * most conspicuous remaining stock element on a dashboard, and because
+ * upstream never touches it there is no specificity fight. */
+html.dark * {
+  scrollbar-width: thin;
+  scrollbar-color: #24406a #080e18;
+}
+html.dark ::-webkit-scrollbar { width: 11px; height: 11px; }
+html.dark ::-webkit-scrollbar-track {
+  background: #080e18;
+  border-left: 1px solid var(--pr-edge);
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: #24406a;
+  border: 2px solid #080e18;
+  border-radius: 6px;
+}
+html.dark ::-webkit-scrollbar-thumb:hover { background: #3a5e96; }
+html.dark ::-webkit-scrollbar-corner { background: #080e18; }
+
+/* --- Map tiles ------------------------------------------------------------
+ * app.css ships `html.dark .leaflet-tile` — the SAME specificity (0,2,1) this
+ * skin uses, so source order decides and custom_css wins. Retuned so the map
+ * sits in the skin's hue instead of the stock blue-grey. */
+html.dark .leaflet-tile {
+  filter: brightness(0.6) invert(1) contrast(2.7) hue-rotate(205deg) saturate(0.45) brightness(0.7);
+}
+html.dark .leaflet-container { background: var(--pr-panel); }
+html.dark .leaflet-bar a,
+html.dark .leaflet-control-layers,
+html.dark .leaflet-popup-content-wrapper,
+html.dark .leaflet-popup-tip {
+  background-color: var(--pr-panel-raised);
+  color: var(--pr-text);
+  border-color: var(--pr-edge);
+}
+
+/* --- Contextual panels ----------------------------------------------------
+ * Only .panel-default was styled before, so a success/warning/danger panel
+ * reverted to stock. */
+html.dark .panel-primary,
+html.dark .panel-success,
+html.dark .panel-info,
+html.dark .panel-warning,
+html.dark .panel-danger {
+  background-color: var(--pr-panel);
+}
+html.dark .panel-primary  > .panel-heading { background: var(--pr-psi-deep); border-color: var(--pr-psi); color: var(--pr-text-bright); }
+html.dark .panel-success  > .panel-heading { background: var(--pr-ok-deep);   border-color: var(--pr-ok);   color: var(--pr-text-bright); }
+html.dark .panel-info     > .panel-heading { background: var(--pr-psi-deep); border-color: var(--pr-psi); color: var(--pr-text-bright); }
+html.dark .panel-warning  > .panel-heading { background: var(--pr-warn-deep); border-color: var(--pr-warn); color: var(--pr-text-bright); }
+html.dark .panel-danger   > .panel-heading { background: var(--pr-danger-deep); border-color: var(--pr-danger); color: var(--pr-text-bright); }
+
+html.dark .panel-primary,
+html.dark .panel-info    { border-color: var(--pr-psi); }
+html.dark .panel-success { border-color: var(--pr-ok); }
+html.dark .panel-warning { border-color: var(--pr-warn); }
+html.dark .panel-danger  { border-color: var(--pr-danger); }
+
+/* --- Contextual text and backgrounds -------------------------------------- */
+html.dark .text-muted   { color: var(--pr-text-mute) !important; }
+html.dark .text-primary { color: var(--pr-psi); }
+html.dark .text-info    { color: var(--pr-psi); }
+html.dark .text-success { color: var(--pr-ok); }
+html.dark .text-warning { color: var(--pr-warn); }
+html.dark .text-danger  { color: var(--pr-danger); }
+
+html.dark .bg-success { background-color: var(--pr-ok-deep) !important;     color: var(--pr-text); }
+html.dark .bg-info    { background-color: var(--pr-psi-deep) !important;   color: var(--pr-text); }
+html.dark .bg-danger  { background-color: var(--pr-danger-deep) !important; color: var(--pr-text); }
+
+html.dark mark,
+html.dark .mark {
+  background-color: var(--pr-gold);
+  color: #14100a;
+  padding: 0 .25em;
+  border-radius: var(--pr-radius);
+}
+
+/* --- Headings -------------------------------------------------------------- */
+html.dark h1, html.dark h2, html.dark h3,
+html.dark h4, html.dark h5, html.dark h6,
+html.dark .h1, html.dark .h2, html.dark .h3,
+html.dark .h4, html.dark .h5, html.dark .h6 {
+  color: var(--pr-text-bright);
+  font-family: var(--pr-font-chrome);
+}
+
+/* --- Stragglers from sets already styled ---------------------------------- */
+html.dark .label-primary,
+html.dark .badge-primary { background-color: var(--pr-psi-deep); color: var(--pr-text-bright); }
+
+html.dark .btn-info,
+html.dark .lnms-btn-info {
+  background-color: var(--pr-psi-deep) !important;
+  border-color: var(--pr-psi) !important;
+  color: var(--pr-text-bright) !important;
+}
+
+html.dark .list-group-item {
+  background-color: var(--pr-panel);
+  border-color: var(--pr-edge);
+  color: var(--pr-text);
+}
+html.dark .list-group-item:hover { background-color: var(--pr-panel-hi); }
+html.dark .list-group-item-danger {
+  background-color: var(--pr-danger-deep);
+  border-color: var(--pr-danger);
+  color: var(--pr-text);
+}
+
+/* --- Pagination ------------------------------------------------------------ */
+html.dark .pagination > li > a,
+html.dark .pagination > li > span {
+  background-color: var(--pr-panel-raised);
+  border-color: var(--pr-edge);
+  color: var(--pr-text-dim);
+}
+html.dark .pagination > li > a:hover {
+  background-color: var(--pr-panel-hi);
+  border-color: var(--pr-gold);
+  color: var(--pr-text-bright);
+}
+html.dark .pagination > .active > a,
+html.dark .pagination > .active > span,
+html.dark .pagination > .active > a:hover {
+  background-color: var(--pr-panel-hi);
+  border-color: var(--pr-gold);
+  color: var(--pr-gold);
+}
+html.dark .pagination > .disabled > span,
+html.dark .pagination > .disabled > a {
+  background-color: var(--pr-panel);
+  border-color: var(--pr-edge);
+  color: var(--pr-text-mute);
+}
+
+/* --- Dismiss buttons, popovers, mobile menu -------------------------------- */
+html.dark .close {
+  color: var(--pr-text-dim);
+  text-shadow: none;
+  opacity: .8;
+}
+html.dark .close:hover { color: var(--pr-danger); opacity: 1; }
+
+html.dark .popover {
+  background-color: var(--pr-panel-raised);
+  border-color: var(--pr-edge);
+  color: var(--pr-text);
+}
+html.dark .popover-title {
+  background-color: var(--pr-panel);
+  border-bottom-color: var(--pr-edge);
+  color: var(--pr-gold);
+  font-family: var(--pr-font-chrome);
+}
+html.dark .popover.top > .arrow::after    { border-top-color: var(--pr-panel-raised); }
+html.dark .popover.bottom > .arrow::after { border-bottom-color: var(--pr-panel-raised); }
+html.dark .popover.left > .arrow::after   { border-left-color: var(--pr-panel-raised); }
+html.dark .popover.right > .arrow::after  { border-right-color: var(--pr-panel-raised); }
+
+/* Invisible on desktop, the only navigation on a phone. */
+html.dark .navbar-default .navbar-toggle {
+  border-color: var(--pr-edge);
+  background-color: var(--pr-panel-raised);
+}
+html.dark .navbar-default .navbar-toggle:hover,
+html.dark .navbar-default .navbar-toggle:focus { background-color: var(--pr-panel-hi); }
+html.dark .navbar-default .navbar-toggle .icon-bar { background-color: var(--pr-gold); }
+
+/* --- Tables: bordered / responsive ----------------------------------------- */
+html.dark .table-bordered,
+html.dark .table-bordered > thead > tr > th,
+html.dark .table-bordered > tbody > tr > td,
+html.dark .table-bordered > tbody > tr > th {
+  border-color: var(--pr-edge);
+}
+html.dark .table-responsive { border-color: var(--pr-edge); }
+
+/* --- Form validation states ------------------------------------------------ */
+html.dark .help-block { color: var(--pr-text-mute); }
+html.dark .has-error .form-control    { border-color: var(--pr-danger); }
+html.dark .has-error .control-label,
+html.dark .has-error .help-block      { color: var(--pr-danger); }
+html.dark .has-success .form-control  { border-color: var(--pr-ok); }
+html.dark .has-success .control-label { color: var(--pr-ok); }
+
+/* --- LibreNMS-specific classes --------------------------------------------- */
+html.dark .device-overview,
+html.dark .device-availability,
+html.dark .service-availability {
+  background-color: var(--pr-panel);
+  color: var(--pr-text);
+}
+html.dark .expandable { background-color: var(--pr-panel-raised); }
+html.dark .interface-upup { color: var(--pr-ok); }
+
+/* Legacy colour classes, still used on a few pages. */
+html.dark .blue { color: var(--pr-psi) !important; }
+html.dark .grey { color: var(--pr-text-mute) !important; }
+html.dark .red  { color: var(--pr-danger) !important; }
+
+/* --- select2 dropdowns ------------------------------------------------------
+ * Generated markup, used widely on settings and search forms. */
+html.dark .select2-container--bootstrap .select2-selection,
+html.dark .select2-container--bootstrap .select2-dropdown {
+  background-color: var(--pr-panel);
+  border-color: var(--pr-edge);
+  color: var(--pr-text);
+}
+html.dark .select2-container--bootstrap .select2-selection__rendered { color: var(--pr-text); }
+html.dark .select2-container--bootstrap .select2-results__option {
+  background-color: var(--pr-panel);
+  color: var(--pr-text-dim);
+}
+html.dark .select2-container--bootstrap .select2-results__option--highlighted {
+  background-color: var(--pr-panel-hi);
+  color: var(--pr-text-bright);
+}
+html.dark .select2-container--bootstrap .select2-search__field {
+  background-color: var(--pr-panel);
+  border-color: var(--pr-edge);
+  color: var(--pr-text);
+}
+
+/* --- Legacy overlib tooltips ------------------------------------------------ */
+html.dark #overDiv,
+html.dark .overlib,
+html.dark .overlib-contents {
+  background-color: var(--pr-panel-raised) !important;
+  border-color: var(--pr-edge) !important;
+  color: var(--pr-text) !important;
+}
+html.dark .overlib-text { color: var(--pr-text) !important; }
+
+/* --- Final two coverage gaps ------------------------------------------------
+ * `.with-nav-tabs` is a THIRD instance of the escalating-specificity problem:
+ * upstream ships
+ *     .dark .with-nav-tabs.panel-default .nav-tabs > li > a     (0,4,2)
+ * so it needs the whole chain mirrored, not an `html.dark` prefix. */
+html.dark .page-availability-report-select {
+  color: var(--pr-text);
+  background-color: var(--pr-panel);
+}
+
+html.dark .with-nav-tabs.panel-default .nav-tabs > li > a {
+  color: var(--pr-text-dim);
+}
+html.dark .with-nav-tabs.panel-default .nav-tabs > li.active > a {
+  color: var(--pr-gold);
+}

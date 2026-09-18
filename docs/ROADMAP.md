@@ -16,9 +16,9 @@ Run `./scripts/coverage.sh /opt/librenms` for the current number. As of today:
 
 | Skin | Coverage |
 |---|---|
-| Terran | 40 / 92 components (43%) |
-| Protoss | 40 / 92 (43%) |
-| Zerg | 40 / 92 (43%) |
+| Terran | 92 / 92 components (100%) |
+| Protoss | 92 / 92 (100%) |
+| Zerg | 92 / 92 (100%) |
 
 The denominator is every component `tw_dark.css` gives dark-mode treatment to.
 That file is the closest thing LibreNMS has to a manifest of "things that need
@@ -28,9 +28,10 @@ stock dark-theme colours sitting in the middle of the skin.
 All three sit at the same number because they share structure. Fix a gap in one
 and the same gap exists in the other two; the work is parallel by construction.
 
-**This is the single most important thing to understand before continuing.**
-The skins look finished in the harness because the harness only renders what
-they already cover. They are not finished.
+Reaching 100% does **not** mean pixel-perfect. It means every component
+`tw_dark.css` styles is now answered by each skin. Components upstream never
+themed (query-builder, datetimepicker, bootstrap-switch) are still stock, and
+only walking real pages will find those.
 
 ---
 
@@ -56,85 +57,27 @@ PNGs server-side. That is documented in FINDINGS §5, not a bug to chase.
 
 ---
 
-## Priority 2 — close the contextual-variant gap
+## Completed (2026-09-18)
 
-The largest and easiest win. These are Bootstrap's contextual variants, they
-appear on nearly every page, and each is a handful of lines following patterns
-the skins already establish.
+Priorities 2–5 are done. Coverage went 43% → 100% in one pass, generated from a
+single template so the three skins could not drift. Closed: contextual panels,
+`.text-*` / `.bg-*`, headings, `.label-primary`, `.btn-info`, list groups,
+pagination, `.close`, popovers, `.navbar-toggle`, bordered/responsive tables,
+form validation states, LibreNMS-specific classes, legacy `.blue/.grey/.red`,
+select2 and overlib.
 
-**Panels** — the skins only style `.panel-default`. Everything else falls
-through to stock dark:
+Two additions not on the original list, both found by looking at a real
+instance rather than the harness:
 
-```
-.panel-primary  .panel-success  .panel-info  .panel-warning  .panel-danger
-```
+- **Scrollbars.** LibreNMS styles none, so every scrollable widget rendered a
+  bright browser-default trough against a dark UI. The single most conspicuous
+  stock element on a dashboard, and free to fix — upstream never touches it.
+- **Map tiles.** `html.dark .leaflet-tile` is the same specificity the skins
+  use, so source order lets custom_css retune the filter per skin.
 
-**Contextual text and backgrounds:**
-
-```
-.text-muted  .text-primary  .text-success  .text-danger  .text-warning  .text-info
-.bg-success  .bg-info  .bg-danger  .mark
-```
-
-**Stragglers from sets already styled** — each skin styles most of these
-families but missed one member:
-
-```
-.label-primary   .btn-info   .list-group-item   .list-group-item-danger
-```
-
-**Headings:** `.h1` … `.h6`
-
-Do these three at a time, one component across all three skins, so the skins
-stay in lockstep.
-
----
-
-## Priority 3 — navigation and interaction chrome
-
-```
-.pagination          every paginated table
-.close               modal and alert dismiss buttons
-.navbar-toggle       the mobile menu - currently unstyled at narrow widths
-.popover             hover detail
-.table-bordered      .table-responsive
-.with-nav-tabs
-```
-
-`.navbar-toggle` is the one to do first. It is invisible on a desktop and
-obvious on a phone, which is exactly the kind of gap that ships.
-
----
-
-## Priority 4 — third-party widgets
-
-More work each, because the markup is generated and needs inspecting in a
-browser first.
-
-```
-.select2-container  .select2-container--bootstrap    dropdowns, used widely
-.grid-stack  .gs-w                                   dashboard widget grid
-#overDiv  .overlib  .overlib-contents  .overlib-text  legacy tooltips
-```
-
-Also unstyled and not in the coverage list because `tw_dark.css` does not touch
-them: `query-builder` (alert rules), `bootstrap-datetimepicker`,
-`bootstrap-switch`, `jquery.bootgrid` beyond the header/footer already done.
-
----
-
-## Priority 5 — LibreNMS-specific classes
-
-```
-.device-availability  .service-availability  .page-availability-report-select
-.device-overview      .interface-upup        .expandable
-.blue  .grey  .red                           legacy colour classes
-.has-success  .has-error  .help-block        form validation states
-```
-
-The form validation states are worth doing early despite being last here — they
-are the difference between a form that reports an error legibly and one that
-does not.
+Still stock because `tw_dark.css` never styled them, so they are outside the
+coverage denominator: `query-builder` (alert rules), `bootstrap-datetimepicker`,
+`bootstrap-switch`.
 
 ---
 
