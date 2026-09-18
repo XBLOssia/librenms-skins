@@ -77,7 +77,7 @@
   /* Text */
   --pr-text:          #c6d5ea;
   --pr-text-dim:      #8ba0bf;
-  --pr-text-mute:     #5f7391;
+  --pr-text-mute:     #92a0b4;   /* raised for AA - see 14e */
   --pr-text-bright:   #f0f7ff;
 
   /* Geometry — chamfers, not radii */
@@ -1515,3 +1515,10 @@ html.dark .nav > li > a:focus {
   background-color: var(--pr-panel-hi);
   border-color: var(--pr-edge);
 }
+
+/* --- Muted text -------------------------------------------------------------
+ * --*-text-mute was raised from its original value. It read 2.3-2.6:1 against
+ * the surfaces it actually lands on, which is below AA for normal text. Muted
+ * means de-emphasised, not unreadable; a secondary colour still has to clear
+ * 4.5:1 against every background it can appear on, and the worst case here is
+ * the hover/active row rather than the panel body. */

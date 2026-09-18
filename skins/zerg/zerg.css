@@ -69,7 +69,7 @@
   /* Text — warm, bone-tinted, never cold grey */
   --zg-text:          #d6c5b6;
   --zg-text-dim:      #9d8877;
-  --zg-text-mute:     #6e5b50;
+  --zg-text-mute:     #9c8f88;   /* raised for AA - see 14e */
   --zg-text-bright:   #f7ede1;
 
   /* Geometry — nothing square, nothing matching.
@@ -1499,3 +1499,10 @@ html.dark .nav > li > a:focus {
   background-color: var(--zg-flesh-hi);
   border-color: var(--zg-carapace);
 }
+
+/* --- Muted text -------------------------------------------------------------
+ * --*-text-mute was raised from its original value. It read 2.3-2.6:1 against
+ * the surfaces it actually lands on, which is below AA for normal text. Muted
+ * means de-emphasised, not unreadable; a secondary colour still has to clear
+ * 4.5:1 against every background it can appear on, and the worst case here is
+ * the hover/active row rather than the panel body. */
