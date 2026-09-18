@@ -16,9 +16,13 @@ Run `./scripts/coverage.sh /opt/librenms` for the current number. As of today:
 
 | Skin | Coverage |
 |---|---|
-| Terran | 184 / 215 (85%) |
-| Protoss | 184 / 215 (85%) |
-| Zerg | 184 / 215 (85%) |
+| Terran | 183 / 218 (83%) |
+| Protoss | 183 / 218 (83%) |
+| Zerg | 183 / 218 (83%) |
+
+That number went *down* from a previously reported 85%, twice, because the
+measurement was wrong both times — see below. Group A is 92/92; the remainder
+is group B legacy.
 
 There are **two** denominators, and using only the first hid a real gap for
 several rounds:

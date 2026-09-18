@@ -1395,3 +1395,54 @@ html.dark .marker-cluster {
   font-weight: 700;
   box-shadow: 0 0 0 3px rgba(0, 0, 0, .35);
 }
+
+/* -----------------------------------------------------------------------------
+ * 14e. FOUND BY THE LIVE CONTRAST AUDIT
+ *
+ * harness/audit.js measures contrast on the rendered page. These three came
+ * out of running it on /alert-rules and /devices, and all three were mine.
+ * -------------------------------------------------------------------------- */
+
+/* `.active` table rows. tw_dark paints these #49515a, a mid grey, and muted
+   text on it measured 1.67:1 - the worst reading on any page.
+   Upstream is (0,3,3), so the full chain is mirrored for (0,3,4).
+   NOTE: coverage.sh reported `.active` as covered because the skin contained
+   `.rules-group-header .active` and it matches on substring. Fixed there too. */
+html.dark .table > thead > tr.active > td, html.dark .table > tbody > tr.active > td,
+html.dark .table > thead > tr.active > th, html.dark .table > tbody > tr.active > th,
+html.dark .table > thead > tr > td.active, html.dark .table > tbody > tr > td.active {
+  background-color: var(--tn-plate-hi);
+  color: var(--tn-text-bright);
+}
+
+/* bootstrap-switch colour variants. Section 13 themed only -default and
+   -primary; LibreNMS uses -danger for the OFF state, which stayed stock
+   Bootstrap #d9534f with white text at 3.96:1. */
+html.dark .bootstrap-switch .bootstrap-switch-handle-on.bootstrap-switch-success,
+html.dark .bootstrap-switch .bootstrap-switch-handle-off.bootstrap-switch-success {
+  background: var(--tn-green-deep); color: var(--tn-green);
+}
+html.dark .bootstrap-switch .bootstrap-switch-handle-on.bootstrap-switch-danger,
+html.dark .bootstrap-switch .bootstrap-switch-handle-off.bootstrap-switch-danger {
+  background: var(--tn-red-deep); color: var(--tn-danger-text);
+}
+html.dark .bootstrap-switch .bootstrap-switch-handle-on.bootstrap-switch-warning,
+html.dark .bootstrap-switch .bootstrap-switch-handle-off.bootstrap-switch-warning {
+  background: var(--tn-amber-deep); color: var(--tn-hazard);
+}
+html.dark .bootstrap-switch .bootstrap-switch-handle-on.bootstrap-switch-info,
+html.dark .bootstrap-switch .bootstrap-switch-handle-off.bootstrap-switch-info {
+  background: var(--tn-console-deep); color: var(--tn-console);
+}
+
+/* Remaining group-A components, exposed once coverage.sh stopped matching on
+   substrings: bare `.select2-container` and `.nav` (only the --bootstrap and
+   -tabs variants were covered). */
+html.dark .select2-container {
+  color: var(--tn-text);
+}
+html.dark .nav > li > a:hover,
+html.dark .nav > li > a:focus {
+  background-color: var(--tn-plate-hi);
+  border-color: var(--tn-edge);
+}

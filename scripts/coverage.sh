@@ -58,6 +58,17 @@ print('\n'.join(sorted(cls - tw_cls)))
 PYEOF
 )
 
+
+# $1 is a selector token like ".panel-heading" or "#overDiv". Substring
+# matching over-counted - a skin containing `.rules-group-header .active`
+# made `.active` look covered - so require the name to end at a non-name
+# character. Handles both class and id prefixes.
+match_class() {
+  local tok="$1" f="$2" pre name
+  pre="${tok:0:1}"; name="${tok:1}"
+  grep -qE -- "[${pre}]${name}([^a-zA-Z0-9_-]|$)" "$f"
+}
+
 count() { printf '%s\n' "$1" | grep -c . ; }
 a_total=$(count "$group_a")
 b_total=$(count "$group_b")
@@ -77,11 +88,11 @@ for skin in $skins; do
   miss_a=""; miss_b=""; na=0; nb=0
   while read -r c; do
     [ -z "$c" ] && continue
-    grep -qF -- "$c" "$css" || { miss_a="$miss_a $c"; na=$((na+1)); }
+    match_class "$c" "$css" || { miss_a="$miss_a $c"; na=$((na+1)); }
   done <<< "$group_a"
   while read -r c; do
     [ -z "$c" ] && continue
-    grep -qF -- "$c" "$css" || { miss_b="$miss_b $c"; nb=$((nb+1)); }
+    match_class "$c" "$css" || { miss_b="$miss_b $c"; nb=$((nb+1)); }
   done <<< "$group_b"
 
   cov_a=$((a_total - na)); cov_b=$((b_total - nb))
