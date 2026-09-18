@@ -57,6 +57,10 @@
   /* Status: red indicator LEDs, green terminal phosphor */
   --tn-led-red:       #ff4a3d;
   --tn-red:           #cf3a2f;
+  --tn-danger-text:   #ff6e64;   /* danger TEXT on a dark surface.
+                                    A fill colour and a text colour
+                                    cannot be the same value and both
+                                    clear WCAG AA - see 14e.        */
   --tn-red-deep:      #4a1512;
   --tn-green:         #46c96b;
   --tn-green-deep:    #11381f;
@@ -549,7 +553,7 @@ html.dark .badge {
 
 html.dark .label-danger,  html.dark .badge-danger  { background-color: var(--tn-red); }
 html.dark .label-success, html.dark .badge-success { background-color: #2f7a45; }
-html.dark .label-warning, html.dark .badge-warning { background-color: #b5871a; }
+html.dark .label-warning, html.dark .badge-warning { background-color: #b5871a; color: #2a1f04; }
 html.dark .label-info,    html.dark .badge-info    { background-color: #2a5f80; }
 html.dark .label-default, html.dark .badge-default { background-color: var(--tn-plate-hi); }
 
@@ -581,7 +585,7 @@ html.dark .device-link-disabled {
 }
 
 html.dark .device-link-up       { color: var(--tn-green)     !important; }
-html.dark .device-link-down     { color: var(--tn-led-red)   !important;
+html.dark .device-link-down     { color: var(--tn-danger-text) !important;
                                   text-shadow: 0 0 9px rgba(255, 74, 61, .45); }
 html.dark .device-link-disabled { color: var(--tn-text-mute) !important; }
 

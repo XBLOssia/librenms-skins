@@ -61,6 +61,7 @@
   --zg-ember:         #ff7a1f;   /* orange vent glow — warning              */
   --zg-ember-deep:    #3d1c05;
   --zg-blood:         #d8453f;   /* danger                                  */
+  --zg-danger-text:   #e47f7b;   /* danger TEXT on a dark surface (AA)      */
   --zg-blood-deep:    #3d0e0d;
   --zg-violet:        #9d5bd8;   /* cerebrate psionics — info accent        */
   --zg-violet-deep:   #241340;
@@ -621,7 +622,7 @@ html.dark .device-link-disabled {
 
 html.dark .device-link-up   { color: var(--zg-ichor) !important; }
 html.dark .device-link-down {
-  color: var(--zg-blood) !important;
+  color: var(--zg-danger-text) !important;
   text-shadow: 0 0 11px rgba(216, 69, 63, .55);
 }
 html.dark .device-link-disabled { color: var(--zg-text-mute) !important; }

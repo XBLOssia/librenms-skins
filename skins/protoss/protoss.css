@@ -71,6 +71,7 @@
   --pr-warn:          #f0a92c;
   --pr-warn-deep:     #3d2a06;
   --pr-danger:        #ff5c7a;   /* psionic magenta-red                      */
+  --pr-danger-text:   #ff6985;   /* danger TEXT on a dark surface (AA)       */
   --pr-danger-deep:   #3d0f22;
 
   /* Text */
@@ -604,7 +605,7 @@ html.dark .badge {
 
 html.dark .label-danger,  html.dark .badge-danger  { background-color: #a32546; color: #fff; }
 html.dark .label-success, html.dark .badge-success { background-color: #14705b; color: #d6fff2; }
-html.dark .label-warning, html.dark .badge-warning { background-color: var(--pr-gold-deep); color: var(--pr-gold-bright); }
+html.dark .label-warning, html.dark .badge-warning { background-color: var(--pr-gold); color: #2a1f04; }
 html.dark .label-info,    html.dark .badge-info    { background-color: #15567d; color: #cdeeff; }
 html.dark .label-default, html.dark .badge-default { background-color: var(--pr-panel-hi); color: var(--pr-text-dim); }
 
@@ -638,7 +639,7 @@ html.dark .device-link-disabled {
 
 html.dark .device-link-up   { color: var(--pr-ok) !important; }
 html.dark .device-link-down {
-  color: var(--pr-danger) !important;
+  color: var(--pr-danger-text) !important;
   text-shadow: 0 0 11px rgba(255, 92, 122, .5);
 }
 html.dark .device-link-disabled { color: var(--pr-text-mute) !important; }
