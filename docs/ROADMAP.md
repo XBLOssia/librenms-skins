@@ -172,9 +172,10 @@ They are captures of `harness/mockup.html`, whose markup is read off a running
 instance rather than invented, with graphs rendered by rrdtool from a
 synthetic RRD. `./scripts/capture-mockups.sh` regenerates them deterministically.
 
-**Upstream.** *Status: a deliberately non-specific message has gone out on
-Discord; the full plan has not been posted anywhere yet.* Nothing below is
-public, so it can still change freely.
+**Upstream.** *Status: **posted**, 2026-09-21 —
+[community.librenms.org → Projects](https://community.librenms.org/t/a-theme-system-for-librenms-a-phased-proposal/29463).*
+It is public now, so it can no longer be quietly revised; corrections have to
+be replies.
 
 Drafted — see [PROPOSAL.md](PROPOSAL.md). Scoped to a phased
 **theme system**: admin installs a theme from a validated JSON manifest, users
@@ -224,16 +225,26 @@ Deliberately **not** written yet. Submitting a working PR before the forum
 conversation cuts against the sequencing murrant asked for on #19029, which
 this whole proposal is built on. Write it when 0c is welcome, not before.
 
-Still to decide before posting:
+Resolved since:
 
-- Whether to make this repo public. The post is self-contained and deliberately
-  doesn't link it, but "here are three working themes" is decent evidence that
-  the problem is real.
-- Whether to generate the before/after screenshots first. The post offers them
-  rather than claiming they exist.
+- **~~Whether to make this repo public.~~** It is public, as of 2026-09-21,
+  after a pre-publication sweep (see the commit log). The post does not link
+  it — that was written while the repo was private and is now a free move
+  available as a follow-up reply if the thread warrants it.
+- **~~Whether to generate screenshots first.~~** Three exist, one per skin, in
+  `docs/img/`. Note these are *skin* screenshots; the post separately offers
+  **before/after** evidence for anything claimed pixel-identical upstream,
+  which is a different artefact and still unbuilt. It is only needed if a
+  phase is welcomed.
+
+Still open:
+
 - Don't write a line of Phase 1 until the token contract question gets an
   answer — that list becomes the theming API and is the expensive thing to get
   wrong.
+- **Phase 0c has a patch already scoped but unwritten** (see "Ready to write"
+  above). It is running locally on the production instance; that is a
+  downstream hack, not a submission. Write the real thing when 0c is welcome.
 
 ---
 

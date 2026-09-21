@@ -28,10 +28,22 @@ Layout on that host:
 webui.custom_css                     =       ["css/custom/zerg/zerg.css"]
 ```
 
-Files were uploaded over SFTP rather than cloned, because the repo is private
-and that avoids putting a git credential on the monitoring host. The trade-off
-is that `git pull` will not update it in place — re-upload, or add a deploy key
-and convert `/opt/librenms-skins` into a real clone.
+Files were uploaded over SFTP rather than cloned. That was necessary while the
+repo was private — it avoided putting a git credential on the monitoring host —
+and it is now merely a leftover: the repo is public, so a plain
+`git clone` needs no credential at all.
+
+The trade-off of the SFTP arrangement is that `git pull` will not update it in
+place. Converting it to a real clone is now a one-liner and makes updates
+normal:
+
+```bash
+sudo -u librenms git clone https://github.com/XBLOssia/librenms-skins.git   /opt/librenms-skins-git
+# then swap it in and re-run install.sh, or just move it into place
+```
+
+Also note the example above shows `zerg` active. Whichever skin is current,
+`install.sh <name>` is what changes it.
 
 To switch the active skin on that host:
 

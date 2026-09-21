@@ -1,7 +1,14 @@
 # Upstream proposal
 
-Draft for the LibreNMS community forum. Post from `### A theme system for
-LibreNMS` down — everything above that is internal.
+**POSTED 2026-09-21:** [community.librenms.org → Projects](https://community.librenms.org/t/a-theme-system-for-librenms-a-phased-proposal/29463)
+
+What follows is the source the post was built from. It is kept as the record
+of what was said and why. **Do not silently edit it to match later thinking** —
+the thread is public, so a correction belongs in a reply, and this file should
+show what was actually claimed. Verified after posting: 14 headings, 5 code
+blocks and 3 tables all survived Discourse's markdown intact.
+
+Everything above `### A theme system for LibreNMS` was internal and not posted.
 
 **Venue:** [community.librenms.org → Projects](https://community.librenms.org/c/projects)
 — GitHub Discussions is disabled on the repo (404), and Feature Requests has
@@ -9,10 +16,11 @@ LibreNMS` down — everything above that is internal.
 "a space for discussing ongoing development work and initiatives", which is
 exactly what this is.
 
-**Before posting:** say hello on Discord first. murrant gave direct guidance on
+**~~Before posting~~ — done.** Said hello on Discord first, then posted.
+murrant gave direct guidance on
 [#19029](https://github.com/librenms/librenms/pull/19029) about sequencing, and
 this is built on it. The PR template also warns that PRs may be closed without
-explanation over LLM-generated submissions, so a human conversation first is
+explanation over LLM-generated submissions, so a human conversation first was
 worth a lot.
 
 ---
@@ -457,17 +465,19 @@ this comes from using it rather than theorising about it.
 
 ## Notes for us, not for the post
 
-**Fix before posting:**
+**~~Fix before posting~~ — all handled:**
 
-- The `XBLOssia/librenms-skins` repo is **private**. Don't link it — the post is
-  deliberately self-contained now. Either make it public first or leave the link
-  out.
+- The repo was private, so the post deliberately does not link it. It is public
+  now. Adding the link is a follow-up reply, not an edit.
 - The offer says "I can provide before/after screenshots" rather than claiming
-  they exist. Generate them before anyone asks.
-- The old draft disclosed the instance size (1,400+ devices). Removed — say it
-  if you want, but it's your infrastructure detail.
+  they exist. Still true, and still the right shape: they are cheap to produce
+  once a phase is actually welcomed, and premature otherwise.
+- The old draft disclosed the instance size (1,400+ devices). Removed from the
+  post. It does appear in `DEPLOYMENT.md` and `ROADMAP.md`, which is a
+  deliberate call — a device count without a hostname is scale, not a target.
 
-**Sequencing:**
+**Sequencing** — steps 1 and 2 are done; the thread is open and awaiting a
+reply. Nothing below should move until someone responds:
 
 1. Discord first, using the opener above.
 2. Post to Projects once someone's said "sure, write it up".
