@@ -57,9 +57,9 @@ Treat coverage as a floor, and the live audit as the actual test.
 
 ## Done — deployed and walked
 
-Zerg, Protoss and Terran have all run on a live instance (`REDACTED-HOST`,
-LibreNMS `26.8.1-147-g63e0394bd1` — the exact commit the skins were built
-against). Deployment tooling is in `scripts/install.sh` and
+Zerg, Protoss and Terran have all run on a live production instance — LibreNMS
+`26.8.1-147-g63e0394bd1`, the exact commit the skins were built against, around
+1,400 devices. Deployment tooling is in `scripts/install.sh` and
 [DEPLOYMENT.md](DEPLOYMENT.md).
 
 Walking real pages is what produced everything in the Completed section below,

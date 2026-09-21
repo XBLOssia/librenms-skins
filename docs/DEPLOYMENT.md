@@ -2,18 +2,23 @@
 
 Installing a skin on a LibreNMS host, and getting it back off again.
 
-Written against LibreNMS master @ `63e0394`. Target host: `REDACTED-HOST`.
+Written against LibreNMS master @ `63e0394`.
 
 ---
 
 ## Deployed instances
 
-| Host | Skin | LibreNMS version | Installed | Mode |
-|---|---|---|---|---|
-| `REDACTED-HOST` | zerg | `26.8.1-147-g63e0394bd1` | 2026-09-18 | link |
+| LibreNMS version | Devices | Mode | Skins exercised |
+|---|---|---|---|
+| `26.8.1-147-g63e0394bd1` | ~1,400 | `link` | all three |
 
 The host version matches the commit the skins were developed and verified
 against exactly, so there is no selector drift to account for.
+
+The instance itself is deliberately not named here. It is a production
+monitoring box, and pairing a resolvable hostname with an exact software
+version in a public repository is free reconnaissance for no benefit to
+anyone reading this.
 
 Layout on that host:
 

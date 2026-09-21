@@ -292,6 +292,15 @@ docs/ROADMAP.md             prioritised backlog and open decisions
 
 [MIT](LICENSE).
 
-The bundled webfonts under `skins/*/fonts/` are **not** covered by that — they
-are SIL Open Font License 1.1, with the upstream notice included beside the
-font files in each directory.
+Two carve-outs:
+
+- The bundled webfonts under `skins/*/fonts/` are **SIL Open Font License
+  1.1**, with the upstream notice included beside the font files in each
+  directory.
+- The patch under `patches/` is **GPLv3**, matching LibreNMS, which it is a
+  diff against and a small amount of which it quotes as context.
+
+No LibreNMS source is otherwise redistributed here. The harness needs several
+of its stylesheets to render anything realistic, and those are fetched at
+setup time by `harness/sync-css.sh` into a gitignored directory rather than
+committed.

@@ -25,3 +25,8 @@ SOFTWARE.
 The bundled webfonts under skins/*/fonts/ are NOT covered by this licence.
 They are licensed under the SIL Open Font License 1.1, and each directory
 carries the upstream OFL notice alongside the font files.
+
+The patch under patches/ is NOT covered by this licence either. It is a diff
+against LibreNMS, which is GPLv3, and it necessarily quotes a small amount of
+that source as context. It is offered under the GPLv3, matching the code it
+modifies, and is intended for upstream submission.
