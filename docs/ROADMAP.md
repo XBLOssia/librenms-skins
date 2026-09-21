@@ -154,8 +154,9 @@ Drafted — see [PROPOSAL.md](PROPOSAL.md). Scoped to a phased
 select it, custom themes are deletable and built-ins protected. Five phases,
 each independently shippable:
 
-- **0** — three small fixes (widget header class, tokenise the 58 graph-helper
-  literals, contextual row contrast). No theme system required.
+- **0** — four small fixes (drop the `!` from 22 inline colour utilities,
+  widget header class, tokenise the 58 graph-helper literals, contextual row
+  contrast). No theme system required.
 - **1** — define the token contract from the 603 literals in `styles.css` +
   `tw_dark.css`. Pixel-identical. This list *is* the theming API.
 - **2** — one palette source for both CSS and graphs.

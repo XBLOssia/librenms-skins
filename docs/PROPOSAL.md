@@ -26,9 +26,10 @@ worth a lot.
 > that are worth doing on their own merits even if the theme system never
 > lands. Mind if I write it up in Projects?
 >
-> Being upfront: I used AI tooling for the measurement and drafting. Every
-> number comes with a command to reproduce it, I've checked them by hand, and
-> I'll own whatever PRs come out of it.
+> Being upfront: I'm using AI tooling for this — the measurement, the writing,
+> and the code if it goes ahead. Every number comes with a command so you can
+> check it rather than trust me, and I'll own and stand behind whatever PRs
+> come out of it.
 
 ---
 
@@ -59,14 +60,20 @@ draft this post. I'm saying so before anything else, because the PR template
 warns about low-quality LLM-generated submissions and that warning is fair — a
 large mechanical refactor looks exactly like the thing it defends against.
 
-My commitment on methodology:
+What I can actually commit to:
 
-- **Every number below is reproducible.** Commands are included. If a figure
-  doesn't reproduce on your checkout, it's wrong and I want to know.
-- **I've verified each one by hand**, and I'll own any PRs — review them as if
-  I typed every character, because I'm accountable for them either way.
-- **Nothing here is a bulk-generated patch.** Each phase is a change I can
-  explain line by line.
+- **Every number is reproducible.** The commands are below. Please don't take
+  my word for any of them — a figure you can check yourself is worth more than
+  an assurance from me.
+- **Small, single-concern PRs.** Review effort stays bounded, and anything
+  claimed as pixel-identical comes with before/after evidence.
+- **I'm accountable for what I submit.** I read the diff before it goes up, I
+  answer review comments, and I don't open a PR and disappear.
+- **The assistance is ongoing, not just the drafting.** I'll be using AI tooling
+  to write these changes and to work through review feedback too. I'd rather
+  say that now than have it inferred later. If that's a dealbreaker for this
+  project, tell me and I'll stop here — no hard feelings, and the measurements
+  are yours to use either way.
 
 For what it's worth, writing the reproduction commands caught an error in my own
 figures: I'd been quoting "468 distinct colours", which turned out to include
