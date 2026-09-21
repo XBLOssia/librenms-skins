@@ -217,37 +217,6 @@ Pixel-identical if defaults keep current values. These helpers are referenced by
 1,322 graph definitions, so this is the best effort-to-impact ratio in the whole
 proposal.
 
-Five of the fifteen read **no config at all** — `generic_data`,
-`generic_duplex`, `generic_simplex`, `generic_multi_data`,
-`generic_multi_bits`, together 40 of the 58 literals and 169 of the
-references. `generic_data.inc.php` is where `#90B040` and `#8080C0` live: the
-green and lavender on every port traffic graph, with no config key that
-reaches them.
-
-What this looks like to a user is worth spelling out, because it reads as a
-bug rather than a gap. Everything renders through one endpoint —
-`/graph/id=<id>?type=<type>` — so the *page* is never the variable; the `type`
-is. Sampling the rendered PNGs on an instance with a themed `graph_colours`:
-
-| `type` | Helper | Dominant colours in the PNG |
-|---|---|---|
-| `device_bits` | `generic_multi_bits_separated` | `#3fb8f5` `#3ad6a8` `#2cb08a` `#218c6e` — **all from config** |
-| `port_bits` | `generic_data` | `#90b040` `#8080c0` — **stock literals** |
-
-Both graphs pick up the themed *chrome* (`#0f1a2e` background, from
-`rrdgraph_def_text_dark`), so the config plainly reaches the renderer. Only the
-series are stuck. The practical result is that a dashboard built mostly from
-port widgets looks completely untouched while the device pages next to it look
-correct — which is exactly the report I got from someone using it.
-
-There's no structural obstacle here: `generic_data.inc.php` builds an
-`$rrd_options[]` array of strings the same way its siblings do, and the in/out
-series are six literals on six lines (149–151, 157–159). The remaining twelve
-are percentile rules, port-speed lines and prediction overlays, which arguably
-*should* stay fixed. This helper simply predates the config mechanism and never
-got converted — and it happens to sit behind the most-viewed graph in the
-product.
-
 | Helper | Literals | References |
 |---|---|---|
 | `generic_stats.inc.php` | **1** | **527** |
@@ -258,8 +227,32 @@ product.
 | …10 more | 26 | 205 |
 | **Total** | **58 across 15 files** | **1,322** |
 
-`generic_data.inc.php` is worth doing first within 0c — it renders `port_bits`,
-the traffic graph on effectively every dashboard, and hardcodes:
+Ten of the fifteen already read `graph_colours`. **Five read no config at
+all** — `generic_data`, `generic_duplex`, `generic_simplex`,
+`generic_multi_data`, `generic_multi_bits` — and those five hold 40 of the 58
+literals.
+
+What that looks like to a user is worth spelling out, because it reads as a bug
+rather than a gap. Every graph in the application renders through one endpoint,
+`/graph/id=<id>?type=<type>`, so the *page* is never the variable — the `type`
+is. Sampling the rendered PNGs on an instance with a themed `graph_colours`:
+
+| `type` | Helper | Dominant colours in the PNG |
+|---|---|---|
+| `device_bits` ("Overall Traffic") | `generic_multi_bits_separated` | `#3fb8f5` `#3ad6a8` `#2cb08a` `#218c6e` — **all from config** |
+| `port_bits` | `generic_data` | `#90b040` `#8080c0` — **stock literals** |
+
+Both pick up the themed *chrome* (`#0f1a2e` background, via
+`rrdgraph_def_text_dark`), so the config plainly reaches the renderer — only
+the series are stuck. The practical result is that a dashboard built mostly
+from port widgets looks completely untouched while the device pages beside it
+look correct. That is the report I got from someone running one of these
+themes, and it took pixel-sampling the PNGs to establish it wasn't a
+dashboard-specific bug.
+
+**`generic_data.inc.php` is worth doing first within 0c.** It renders
+`port_bits` — the traffic graph on effectively every dashboard — and the series
+users actually see are six lines:
 
 ```php
 $rrd_options[] = 'AREA:in'   . $format . '#90B040' . $stacked['transparency'] . ':';
@@ -268,11 +261,24 @@ $rrd_options[] = 'AREA:dout' . $format . '#8080C0' . $stacked['transparency'] . 
 $rrd_options[] = 'LINE:dout' . $format . '#606090:Out';
 ```
 
-Demonstration that this is unreachable today: I built two themes with completely
-different palettes — one teal/gold, one acid-green/magenta — and they render
+The file's other twelve literals are percentile rules, port-speed lines and
+prediction overlays, which arguably *should* stay fixed — leaving them out
+keeps the diff small and the argument narrow. There's no structural obstacle:
+the file builds an `$rrd_options[]` array of strings exactly like its siblings,
+and `generic_multi_bits_separated.inc.php` in the same directory already does
+
+```php
+$colour_in = LibrenmsConfig::get("graph_colours.$colours_in.$iter");
+```
+
+This helper simply predates the config mechanism and never got converted, and
+it happens to sit behind the most-viewed graph in the product.
+
+Corroboration that no theme can reach this today: two of my themes with
+completely different palettes — one teal/gold, one acid-green/magenta — render
 **byte-identical** port graphs.
 
-This needs no new machinery. `graph_colours.*` already exists, is already
+So this needs no new machinery. `graph_colours.*` already exists, is already
 config-driven, and is already used by 89 graph files. It's applying an in-tree
 pattern to the helpers that never got it.
 
@@ -326,8 +332,8 @@ what you're fighting. Normalising that is cheap while the file is already open.
 #### Phase 2 — one palette source for CSS and graphs
 
 Make `rrdgraph_def_text*` and `graph_colours.*` derive from the same tokens as
-the CSS layer, instead of being a parallel universe. After Phase 0b the graph
-side is already config-driven; this just points both at one source.
+the CSS layer, instead of being a parallel universe. After Phase 0c the graph
+side is already config-driven throughout; this just points both at one source.
 
 End state: one palette definition drives the page and the graphs.
 
@@ -408,7 +414,13 @@ Not approval of the whole thing. Specifically:
    present it finished.
 3. **May I open Phase 0b?** One line, obviously correct, easy to review — a
    reasonable place to start building trust. I would then like to follow with
-   0a, which is the one that actually unblocks third-party theming.
+   0a, which is the one that most directly unblocks third-party theming.
+
+If 0c is welcome, I'd suggest starting it with `generic_data.inc.php` on its
+own rather than all fifteen helpers at once — six lines, the pattern copied
+from a sibling file in the same directory, and it fixes `port_bits`, which is
+the graph most people look at most often. Easy to review, easy to revert, and
+it makes the rest of 0c concrete rather than hypothetical.
 
 I'm aware [#4863](https://github.com/librenms/librenms/issues/4863) asked for
 custom templates in 2016 and was closed, and that #19029 was closed this year. I
@@ -459,13 +471,25 @@ this comes from using it rather than theorising about it.
 
 1. Discord first, using the opener above.
 2. Post to Projects once someone's said "sure, write it up".
-3. Open **Phase 0a only**. One line, trivially reviewable. A merged trivial PR
-   buys standing for 0b, which is the one that actually matters.
-4. Hold 0b until 0a merges — it's 15 files and wants a reviewer who already
-   trusts you.
-5. 0c can go any time; it's an accessibility fix independent of the rest.
-6. Don't write a line of Phase 1 until question 2 gets an answer. The token
+3. Open **Phase 0b only** — the widget-header class. One line, trivially
+   reviewable. A merged trivial PR buys standing for the rest.
+4. Then **0a** (drop the `!`, 9 files) once 0b merges. This is the one that
+   most directly unblocks third-party theming, and it wants a reviewer who
+   already trusts you.
+5. **0d** can go any time — contextual row contrast plus the select2
+   placeholder. Pure accessibility, independent of everything else, and the
+   easiest thing in the proposal to say yes to.
+6. **0c** (graph helpers, 15 files) is scoped but unwritten — see
+   [ROADMAP.md](ROADMAP.md) "Ready to write". Start with
+   `generic_data.inc.php` alone if a 15-file PR is too much at once: six lines,
+   and it fixes the most-viewed graph in the product.
+7. Don't write a line of Phase 1 until question 2 gets an answer. The token
    contract is the part that's expensive to get wrong.
 
-If 0a is rejected, stop and ask why before writing more code. That answer tells
-you whether any of the rest is worth the effort.
+**Letters were off by one in an earlier draft of this list** — it said "0a,
+one line" when 0a is 9 files and 0b is the one-liner. Corrected against the
+phase definitions in the post above; if you edit one, re-check the other.
+
+If **0b** — the one-line one — is rejected, stop and ask why before writing
+anything else. A no on the most trivially correct change in the set is an
+answer about the direction, not about the patch.

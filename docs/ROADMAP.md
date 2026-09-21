@@ -2,7 +2,7 @@
 
 Where the project actually stands, and what to pick up next.
 
-Last updated 2026-09-18, against LibreNMS master @ `63e0394`.
+Last updated 2026-09-21, against LibreNMS master @ `63e0394`.
 
 ---
 
@@ -71,7 +71,15 @@ and it found things the harness structurally could not:
   showed bright browser chrome.
 - **Alert-rule row contrast**, which turned out to be an upstream bug rather
   than a gap in the skins.
-- **Port graphs**, which no skin can theme at all — see Not planned below.
+- **The `/eventlog` filter placeholders**, at 1.2:1 — a second upstream bug,
+  and the same mistake as the first: a *surface* value used as *ink*
+  (`#272b30` is `dark-gray-500`).
+- **Inline `tw:` utilities**, which `coverage.sh` cannot see at all because
+  they are in neither denominator. Chasing these overturned the central claim
+  of FINDINGS §2 — they are reachable after all, via the prefixed theme
+  variables. Skins now remap core's dark ramps; see §16 of any skin.
+- **Port graph *series***, which no skin can theme. The chrome themes fine, and
+  the split is by graph **type**, not by page — see Not planned below.
 
 Still worth a look when convenient: the rule builder (`query-builder` is
 unstyled upstream), a datetimepicker, and the narrow/mobile layout.
@@ -113,8 +121,12 @@ built in a JS string, the vendored Leaflet cluster markers, 77 icon buttons
 whose font-family the skin had clobbered, and five contrast failures the skins
 themselves introduced. None were visible to a stylesheet-based check.
 
-Run it on at least `/`, `/devices` and `/alert-rules`. All three currently
-return zero findings on all three skins.
+Run it on at least `/`, `/devices`, `/alert-rules`, `/eventlog` and a graph
+page. All three skins currently return zero findings on all five.
+
+`/eventlog` earns its place on that list: it is the only one of the five that
+exercises a select2 placeholder, which is where a 1.2:1 upstream bug had been
+sitting unnoticed through every previous audit round.
 
 **2. `scripts/coverage.sh` — run this second**, as a floor. It answers "did I
 forget a component", not "does it look right".
@@ -132,6 +144,9 @@ weak regression net on its own. Worth adding:
 5. Dashboard widget markup (`grid-stack-item-content > header`), and an
    icon-on-a-button (`<button class="btn fa fa-x">`) — the two shapes that
    caused the most rework
+6. An inline `tw:`-utility fixture, including a `tw:dark:bg-white!` and a
+   `tw:dark:text-red-500!`. These are invisible to `coverage.sh` by
+   construction and were the source of the last round of live-only bugs
 
 A `?compare` mode rendering all three skins side by side would make drift
 obvious at a glance.
@@ -156,7 +171,10 @@ each independently shippable:
 
 - **0** — four small fixes (drop the `!` from 22 inline colour utilities,
   widget header class, tokenise the 58 graph-helper literals, contextual row
-  contrast). No theme system required.
+  contrast). No theme system required. **0a is weaker than first drafted** —
+  those utilities turned out to be reachable via the prefixed theme variables,
+  so the argument is now "requires two undocumented Tailwind facts", not
+  "impossible". 0c gained a user-visible symptom and a scoped patch.
 - **1** — define the token contract from the 603 literals in `styles.css` +
   `tw_dark.css`. Pixel-identical. This list *is* the theming API.
 - **2** — one palette source for both CSS and graphs.
@@ -170,6 +188,29 @@ never arbitrary CSS, because arbitrary CSS enables exfiltration via
 
 Venue is the forum's Projects category (GitHub Discussions is disabled on the
 repo). AI tooling is disclosed up front in the post.
+
+### Ready to write: the Phase 0c patch
+
+Scoped this session, not yet written. `includes/html/graphs/generic_data.inc.php`
+is the highest-value single file in Phase 0c — it is behind `port_bits`, the
+most-viewed graph in the product, and it reads no config at all.
+
+- **Six lines carry the in/out series** — 149–151 and 157–159. Those are the
+  ones users see as green and lavender.
+- **The other twelve literals stay.** Percentile rules, port-speed lines and
+  prediction overlays are arguably *meant* to be fixed; changing them widens
+  the diff and the argument for no gain.
+- **The pattern already exists in the same directory.**
+  `generic_multi_bits_separated.inc.php` does
+  `LibrenmsConfig::get("graph_colours.$colours_in.$iter")`. This is applying an
+  in-tree idiom to a helper that predates it, not inventing anything.
+- **Pixel-identical if the defaults keep the current values**, which is the
+  whole reviewability argument — and the before/after is easy to evidence by
+  sampling the PNG histogram rather than eyeballing it.
+
+Deliberately **not** written yet. Submitting a working PR before the forum
+conversation cuts against the sequencing murrant asked for on #19029, which
+this whole proposal is built on. Write it when 0c is welcome, not before.
 
 Still to decide before posting:
 
@@ -201,13 +242,28 @@ because they belong upstream, not because they're unwanted — see
 
   | Surface | Themeable? |
   |---|---|
-  | Graph chrome — background, grid, frame, arrows | **Yes**, via `rrdgraph_def_text_dark`. Done. |
-  | Series colours on palette-driven graphs | **Yes**, via `graph_colours.*`. Done. |
-  | Series colours on `generic_*` helper graphs, incl. `port_bits` | **No.** 58 hardcoded literals, no config path. |
+  | Graph chrome — background, grid, frame, arrows | **Yes**, via `rrdgraph_def_text_dark`. Done, on *every* graph including port graphs. |
+  | Series on config-reading helpers (10 of 15) | **Yes**, via `graph_colours.*`. Done. |
+  | Series on the 5 config-blind helpers, incl. `port_bits` | **No.** 40 literals, zero config reads. |
 
   CSS can't reach any of it — RRDtool renders server-side — but "unthemeable"
-  was too strong. The last row is what Phase 0b of the proposal targets, and
-  it's why port graphs still render stock green/lavender under every skin.
+  was too strong twice over. Chrome themes everywhere, and two thirds of the
+  shared helpers already read config.
+
+  **This is a property of the graph type, not of the page.** Everything renders
+  through one `/graph/id=N?type=X` endpoint; there is no dashboard-specific
+  path. A dashboard built mostly from `port_bits` widgets therefore looks
+  entirely unthemed while the device pages beside it look correct. Measured by
+  sampling the PNGs:
+
+  | `type` | Helper | Dominant colours |
+  |---|---|---|
+  | `port_bits` | `generic_data` | `#0f1a2e` (ours) · `#90b040` `#8080c0` (stock) |
+  | `device_bits` | `generic_multi_bits_separated` | `#3fb8f5` `#3ad6a8` `#2cb08a` `#218c6e` (all ours) |
+
+  Fixing it downstream would mean patching a core file that `daily.sh` reverts,
+  so it stays out of scope *here* — but it is Phase 0c of the proposal, and the
+  patch is now scoped (see below).
 
 - **Supporting LibreNMS older than current master.** Selectors are verified
   against `63e0394` only.
