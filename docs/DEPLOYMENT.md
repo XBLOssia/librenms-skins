@@ -137,6 +137,34 @@ cd /opt/librenms-skins && git pull
 
 With `link` that is the whole update. With `copy`, re-run `install.sh`.
 
+**Then hard-refresh — and tell your users to.** LibreNMS emits `custom_css`
+entries as a plain path with no version query:
+
+```html
+<link rel="stylesheet" href="css/custom/protoss/protoss.css">
+```
+
+Nothing in that URL changes when the file does, so browsers serve the cached
+copy until it expires. A normal reload is not enough; the skin will look
+exactly as it did before you deployed, which is a convincing way to waste
+twenty minutes debugging a change that already shipped correctly.
+
+- **Ctrl-Shift-R** (Cmd-Shift-R on macOS) on each client, or
+- from devtools on the page:
+  ```js
+  await fetch('/css/custom/protoss/protoss.css', {cache: 'reload'});
+  location.reload();
+  ```
+
+To confirm what the *server* is sending, independent of any cache:
+
+```bash
+curl -s https://your-instance/css/custom/protoss/protoss.css | wc -c
+```
+
+This is only a papercut for skin authors — end users get the file once and it
+is correct — but it bites every single deploy.
+
 ---
 
 ## Uninstall
