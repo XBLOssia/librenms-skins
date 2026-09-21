@@ -551,6 +551,82 @@ done
 Verified the only way that settles it: two skins with completely different
 palettes render **byte-identical** port graphs.
 
+#### It is the graph *type*, not the page
+
+Worth stating explicitly, because the dashboard makes it look like a
+dashboard problem. It isn't. Every graph in the application — dashboard
+widget, device page, standalone graph page — is the same endpoint:
+
+```
+/graph/id=<id>?type=<type>&from=…&to=…&width=…&height=…
+```
+
+There is no dashboard-specific rendering path. The widget passes a `type`, and
+the server renders it exactly as it would anywhere else. What differs is which
+helper that `type` resolves to.
+
+Sampling the actual PNG pixels on a live instance with the Protoss skin
+active, whose `graph.conf` sets `greens` to a teal ramp and `purples` to a
+blue one:
+
+| Graph | Dominant colours in the rendered PNG |
+|---|---|
+| `type=port_bits` (dashboard widget) | `#0f1a2e` 83614px · **`#90b040`** 18827px · **`#8080c0`** 2912px |
+| `type=device_bits` ("Overall Traffic", device page) | **`#3fb8f5`** 95101px · **`#218c6e`** 77361px · `#0f1a2e` 76560px · **`#2cb08a`** · **`#3ad6a8`** |
+
+Read that carefully, because it separates two things that look like one:
+
+- **`#0f1a2e` is dominant in *both*.** That is the skin's hull colour, arriving
+  via `rrdgraph_def_text_dark`. Graph **chrome is themed on port graphs too** —
+  the config does reach the graph.
+- `#3fb8f5`, `#3ad6a8`, `#2cb08a`, `#218c6e` are `graph_colours.purples[2]` and
+  `graph_colours.greens[2..4]` verbatim. `device_bits` resolves to
+  `generic_multi_bits_separated.inc.php`, which reads the config.
+- `#90b040` and `#8080c0` are the literals at `generic_data.inc.php` lines 150
+  and 158, unchanged. `port_bits` resolves there, and that file contains zero
+  references to `graph_colours`.
+
+A dashboard built mostly from port widgets therefore looks entirely unthemed
+while the device pages look fine — same config, same endpoint, different
+helper.
+
+```js
+// paste on any page with graphs; reports the PNG's own colour histogram
+const hist = async (src) => {
+  const img = new Image(); img.crossOrigin = 'anonymous';
+  await new Promise(r => { img.onload = r; img.src = src; });
+  const c = document.createElement('canvas');
+  c.width = img.naturalWidth; c.height = img.naturalHeight;
+  c.getContext('2d').drawImage(img, 0, 0);
+  const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data, n = {};
+  for (let i = 0; i < d.length; i += 4)
+    { const h = ((1<<24)+(d[i]<<16)+(d[i+1]<<8)+d[i+2]).toString(16).slice(1); n[h] = (n[h]||0)+1; }
+  return Object.entries(n).sort((a,b) => b[1]-a[1]).slice(0, 6);
+};
+await hist(document.querySelector('img[src*="/graph/"]').src);
+```
+
+#### Is there an architectural roadblock?
+
+No. `generic_data.inc.php` sits in the same directory as
+`generic_multi_bits_separated.inc.php`, which already does the right thing:
+
+```php
+$colour_in  = \App\Facades\LibrenmsConfig::get("graph_colours.$colours_in.$iter");
+$colour_out = \App\Facades\LibrenmsConfig::get("graph_colours.$colours_out.$iter");
+```
+
+The in/out series a port graph actually shows are six literals on six lines
+(149–151 and 157–159). The remaining twelve in that file are percentile rules,
+port-speed lines and prediction overlays, which are arguably *meant* to be
+fixed and can stay. Nothing about the file's structure resists this — it builds
+an `$rrd_options[]` array of strings exactly like its siblings do.
+
+So the honest answer is that this is not blocked by anything. It is simply a
+helper that predates the config mechanism and never got converted, and it
+happens to be the one behind the most-used graph in the product.
+
+
 ### Correction: it is 58 literals, not 149 files
 
 An earlier version of this document said 149 graph files hard-code hex, which

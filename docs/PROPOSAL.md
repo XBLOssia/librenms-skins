@@ -224,6 +224,30 @@ references. `generic_data.inc.php` is where `#90B040` and `#8080C0` live: the
 green and lavender on every port traffic graph, with no config key that
 reaches them.
 
+What this looks like to a user is worth spelling out, because it reads as a
+bug rather than a gap. Everything renders through one endpoint —
+`/graph/id=<id>?type=<type>` — so the *page* is never the variable; the `type`
+is. Sampling the rendered PNGs on an instance with a themed `graph_colours`:
+
+| `type` | Helper | Dominant colours in the PNG |
+|---|---|---|
+| `device_bits` | `generic_multi_bits_separated` | `#3fb8f5` `#3ad6a8` `#2cb08a` `#218c6e` — **all from config** |
+| `port_bits` | `generic_data` | `#90b040` `#8080c0` — **stock literals** |
+
+Both graphs pick up the themed *chrome* (`#0f1a2e` background, from
+`rrdgraph_def_text_dark`), so the config plainly reaches the renderer. Only the
+series are stuck. The practical result is that a dashboard built mostly from
+port widgets looks completely untouched while the device pages next to it look
+correct — which is exactly the report I got from someone using it.
+
+There's no structural obstacle here: `generic_data.inc.php` builds an
+`$rrd_options[]` array of strings the same way its siblings do, and the in/out
+series are six literals on six lines (149–151, 157–159). The remaining twelve
+are percentile rules, port-speed lines and prediction overlays, which arguably
+*should* stay fixed. This helper simply predates the config mechanism and never
+got converted — and it happens to sit behind the most-viewed graph in the
+product.
+
 | Helper | Literals | References |
 |---|---|---|
 | `generic_stats.inc.php` | **1** | **527** |
