@@ -172,6 +172,33 @@ Switch skins with `?skin=terran` / `?skin=protoss` / `?skin=zerg`, or the
 buttons at the top of the page. `harness/colorway.html` renders a skin's full
 token set and graph ramps.
 
+### The dashboard mockup
+
+`harness/mockup.html` is a LibreNMS dashboard reproduced offline with invented
+data — hostnames, interfaces, sites, counts, all fictional. It exists so the
+project can be shown without publishing anything from a production instance.
+
+```bash
+./scripts/make-demo-graphs.sh          # once; needs rrdtool
+python -m http.server 8777
+# http://localhost:8777/harness/mockup.html?skin=protoss
+```
+
+The markup is read off a running instance rather than guessed, which paid for
+itself immediately: the first draft used `.availability-map-oldview-box-*`
+(styled by the skins, but not what this LibreNMS renders) and reported three
+contrast failures that do not exist on the real page. Widget header colour and
+font now match the live DOM exactly.
+
+The graphs are genuine rrdtool output, not CSS imitating a graph.
+`scripts/make-demo-graphs.sh` renders them with the same chrome options and
+the same in/out ramps the skin ships, from a synthetic RRD on a fixed epoch —
+so the PNGs are byte-reproducible and contain no production data.
+
+Two things are deliberately *not* the real thing, and the page says so: the
+world map is an abstract drawing (any real tile is a real place), and nothing
+is interactive.
+
 ### Auditing a live instance
 
 The harness cannot show you a gap it does not contain, so the real test is

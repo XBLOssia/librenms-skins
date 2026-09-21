@@ -1,0 +1,334 @@
+<!DOCTYPE HTML>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>librenms-skins — dashboard mockup</title>
+
+<!--
+  A LibreNMS dashboard, reproduced offline with invented data.
+
+  WHY THIS EXISTS
+  Screenshots of the real instance carry real hostnames, real interface
+  descriptions, real site names and a map centred on real geography. Redacting
+  that afterwards is error-prone and looks it. Here there is nothing to
+  redact - no production value ever enters the page.
+
+  HOW FAITHFUL IS IT
+  The markup is copied from the live DOM, not guessed. That distinction earned
+  itself immediately: the first draft used .availability-map-oldview-box-*,
+  which the skin does style but which this LibreNMS does not render - the real
+  availability map is an <a> wrapping
+  `span.label.label-success.widget-availability.label-font-border`. The mockup
+  reported three contrast failures that do not exist on the real page.
+
+  So everything here was read off the running instance: the grid widgets
+  (.grid-stack-item-content > header), the availability labels, the cluster
+  markers (L.divIcon emits them with NO inner div - verified kids=0, which is
+  why the vanilla-Leaflet `.marker-cluster div` selector silently does
+  nothing), and icon-on-a-button, <button class="btn fa fa-x">, the shape that
+  produced 77 tofu boxes. Stylesheets load in the order
+  resources/views/layouts/librenmsv1.blade.php:41-49 uses.
+
+  The graphs are real RRDtool output, not CSS pretending. scripts/make-demo-graphs.sh
+  renders them with the same chrome options and the same three-tone in/out
+  ramps the skin ships, from a synthetic RRD.
+
+  Two things are honestly NOT the real thing, and are marked as such below:
+  the world map (an abstract SVG, because any real tile is a real place) and
+  live behaviour (nothing here is interactive).
+-->
+
+<!-- Real stylesheets, in the real order, as the running instance loads them.
+     app.css is the Vite bundle and has to come first: it carries Bootstrap,
+     the cascade layer declaration (theme / base / components / utilities) and
+     the --tw-color-* theme variables. Nothing below works honestly without it -
+     the `tw:` utilities on the widget headers would resolve to nothing, and
+     the skin's variable retint in section 16 would have nothing to retint. -->
+<link href="css/app.css" rel="stylesheet">
+<link href="css/fontawesome.min.css" rel="stylesheet">
+<link href="css/v4-shims.min.css" rel="stylesheet">
+<link href="css/leaflet.css" rel="stylesheet">
+<link href="css/MarkerCluster.css" rel="stylesheet">
+<link href="css/MarkerCluster.Default.css" rel="stylesheet">
+<link href="css/select2.min.css" rel="stylesheet">
+<link href="css/select2-bootstrap.min.css" rel="stylesheet">
+<link href="css/styles.css" rel="stylesheet">
+<link href="css/tw_dark.css" rel="stylesheet">
+
+<style>
+/* Layout scaffolding only. No colour is set here - .lnms-btn-*, .device-link-*
+   and the Bootstrap components are the genuine article out of app.css. */
+body { padding-top:52px; }
+/* gridstack's real CSS (in app.css) expects its JS to set inline width/height
+   and absolutely positions everything - .grid-stack-item comes out 0x0 and the
+   page collapses. There is no JS here, so its positioning is neutralised while
+   the CLASS NAMES are kept, because the skin selects on them:
+     html.dark .grid-stack .grid-stack-item-content   (0,3,0)
+   Swapping the names for layout-only ones would have been simpler and would
+   have quietly stopped testing the rule that matters. */
+.grid-stack { display:grid; grid-template-columns:repeat(12,1fr); gap:10px;
+  position:static !important; height:auto !important; }
+.grid-stack-item { position:static !important; inset:auto !important;
+  width:auto !important; height:auto !important; }
+.grid-stack-item-content { display:flex; flex-direction:column; overflow:hidden;
+  position:static !important; inset:auto !important;
+  width:auto !important; height:auto !important; }
+/* Layout only - the real <header> carries tw: utility classes for its colour
+   (tw:dark:bg-dark-gray-200 / tw:dark:text-dark-white-100), which the skin
+   retints by redefining those theme variables. Reproduced so the mockup
+   actually exercises that path. Padding is trimmed from the real tw:p-3 purely
+   so more fits on screen. */
+.grid-stack-item-content > header { display:flex; align-items:center;
+  justify-content:space-between; padding:5px 10px !important; }
+.grid-stack-item-content .widget-body { padding:8px; flex:1; overflow:auto; }
+.w3 { grid-column:span 3 } .w4 { grid-column:span 4 } .w5 { grid-column:span 5 }
+.w6 { grid-column:span 6 } .w7 { grid-column:span 7 }
+.graph-image { width:100%; height:auto; display:block; }
+/* Layout only. Every colour below comes from the skin, which is the point.
+   Geometry copied from the live instance: 25x25 clusters at radius 20px, and
+   availability boxes as inline-block labels inside an <a>. */
+.widget-availability { display:inline-block; margin:2px; padding:2.2px 6.6px 3.3px;
+  font-size:11px; font-weight:700; border-radius:2px; }
+.mock-map { position:relative; height:230px; overflow:hidden; }
+.marker-cluster { position:absolute; width:25px; height:25px; border-radius:20px;
+  font-size:14px; line-height:21px; text-align:center; }
+.mock-note { font:11px/1.5 monospace; color:#7d8a93; letter-spacing:.06em;
+  padding:6px 10px; border:1px dashed currentColor; margin:0 0 12px; }
+.dash-toolbar { display:flex; align-items:center; gap:6px; margin:10px 0 12px; }
+</style>
+
+<script>
+  var SKINS = ['terran', 'protoss', 'zerg'];
+  var skin = (new URLSearchParams(location.search).get('skin') || 'terran').toLowerCase();
+  if (SKINS.indexOf(skin) === -1) skin = 'terran';
+  document.write('<link id="skin-css" rel="stylesheet" href="../skins/' +
+                 skin + '/' + skin + '.css">');
+</script>
+</head>
+<body>
+
+<nav class="navbar navbar-default navbar-fixed-top" role="navigation">
+  <div class="container-fluid">
+    <div class="navbar-header"><a class="navbar-brand" href="#">LibreNMS</a></div>
+    <div class="collapse navbar-collapse">
+      <ul class="nav navbar-nav">
+        <li><a href="#"><i class="fa fa-home fa-fw fa-lg fa-nav-icons"></i> Overview</a></li>
+        <li><a href="#"><i class="fa fa-server fa-fw fa-lg fa-nav-icons"></i> Devices</a></li>
+        <li><a href="#"><i class="fa fa-map fa-fw fa-lg fa-nav-icons"></i> Maps</a></li>
+        <li><a href="#"><i class="fa fa-link fa-fw fa-lg fa-nav-icons"></i> Ports</a></li>
+        <li><a href="#"><i class="fa fa-heartbeat fa-fw fa-lg fa-nav-icons"></i> Health</a></li>
+        <li><a href="#"><i class="fa fa-wifi fa-fw fa-lg fa-nav-icons"></i> Wireless</a></li>
+        <li><a href="#"><i class="fa fa-cogs fa-fw fa-lg fa-nav-icons"></i> Services</a></li>
+        <li><a href="#"><span class="badge badge-danger count-notif">12</span> Alerts</a></li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li><a href="#"><i class="fa fa-user fa-fw fa-lg fa-nav-icons"></i> operator@example.net</a></li>
+        <li><a href="#"><i class="fa fa-cog fa-fw fa-lg fa-nav-icons"></i></a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="container-fluid">
+
+  <p class="mock-note">
+    MOCKUP &mdash; every hostname, interface, site and number on this page is
+    invented. Graphs are real rrdtool output from a synthetic RRD. The map is
+    an abstract drawing, not tiles. Skin:
+    <span id="skin-name"></span> &middot; <span id="skin-switcher"></span>
+  </p>
+
+  <div class="dash-toolbar">
+    <a href="#" class="btn btn-default">Dashboards</a>
+    <a href="#" class="btn btn-default">default_operator <b class="caret"></b></a>
+    <button class="btn btn-default fa fa-pencil" title="Edit"></button>
+    <button class="btn btn-danger fa fa-trash" title="Delete"></button>
+    <button class="btn btn-success fa fa-plus" title="Add widget"></button>
+  </div>
+
+  <div class="grid-stack">
+
+    <!-- ---- port graph widgets: real rrdtool PNGs, synthetic data ---- -->
+    <div class="grid-stack-item w5">
+      <div class="grid-stack-item-content">
+        <header class="tw:bg-gray-200 tw:dark:bg-dark-gray-200 tw:text-gray-800 tw:dark:text-dark-white-100 tw:p-3 tw:text-center"><span class="dashboard-widget-title">core-sw-01.example.net / Te1/0/1 / port_bits</span></header>
+        <div class="widget-body"><img class="graph-image" alt="" data-graph="wide"></div>
+      </div>
+    </div>
+    <div class="grid-stack-item w4">
+      <div class="grid-stack-item-content">
+        <header class="tw:bg-gray-200 tw:dark:bg-dark-gray-200 tw:text-gray-800 tw:dark:text-dark-white-100 tw:p-3 tw:text-center"><span class="dashboard-widget-title">dist-sw-11.example.net / Gi1/0/24 / port_bits</span></header>
+        <div class="widget-body"><img class="graph-image" alt="" data-graph=""></div>
+      </div>
+    </div>
+    <div class="grid-stack-item w3">
+      <div class="grid-stack-item-content">
+        <header class="tw:bg-gray-200 tw:dark:bg-dark-gray-200 tw:text-gray-800 tw:dark:text-dark-white-100 tw:p-3 tw:text-center"><span class="dashboard-widget-title">World Map</span></header>
+        <div class="widget-body mock-map">
+          <svg width="100%" height="230" viewBox="0 0 320 230" preserveAspectRatio="xMidYMid slice"
+               aria-label="Abstract map placeholder">
+            <rect width="320" height="230" fill="#20344f" opacity=".35"/>
+            <g stroke="#7d8a93" stroke-width="1.2" opacity=".45" fill="none">
+              <path d="M-10 60 L330 48"/><path d="M-10 132 L330 150"/>
+              <path d="M52 -10 L70 240"/><path d="M188 -10 L172 240"/>
+              <path d="M258 -10 L276 240"/>
+            </g>
+            <g fill="#7d8a93" opacity=".2">
+              <rect x="78" y="62" width="88" height="62" rx="3"/>
+              <rect x="196" y="76" width="62" height="48" rx="3"/>
+              <rect x="86" y="158" width="72" height="52" rx="3"/>
+            </g>
+          </svg>
+          <!-- The real cluster markers, verbatim: L.divIcon emits these with NO
+               inner div (verified kids=0 on the live instance), which is why
+               styling `.marker-cluster div` the way vanilla Leaflet docs show
+               silently does nothing. -->
+          <div class="leaflet-marker-icon greenCluster marker-cluster marker-cluster-small leaflet-zoom-animated leaflet-interactive" style="left:16%;top:22%">14</div>
+          <div class="leaflet-marker-icon greenCluster marker-cluster marker-cluster-small leaflet-zoom-animated leaflet-interactive" style="left:44%;top:38%">27</div>
+          <div class="leaflet-marker-icon greenCluster marker-cluster marker-cluster-small leaflet-zoom-animated leaflet-interactive" style="left:68%;top:26%">9</div>
+          <div class="leaflet-marker-icon greenCluster marker-cluster marker-cluster-small leaflet-zoom-animated leaflet-interactive" style="left:33%;top:66%">21</div>
+          <div class="leaflet-marker-icon greenCluster marker-cluster marker-cluster-small leaflet-zoom-animated leaflet-interactive" style="left:74%;top:62%">6</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---- availability map ---- -->
+    <div class="grid-stack-item w5">
+      <div class="grid-stack-item-content">
+        <header class="tw:bg-gray-200 tw:dark:bg-dark-gray-200 tw:text-gray-800 tw:dark:text-dark-white-100 tw:p-3 tw:text-center"><span class="dashboard-widget-title">Availability Map</span></header>
+        <div class="widget-body">
+          <p style="margin:0 0 6px">
+            Total hosts
+            <a href="#">up: 182</a>
+            <span class="label label-warning label-font-border label-border">warn: 6</span>
+            <a href="#">down: 2</a>
+          </p>
+          <div id="avail-boxes"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-stack-item w4">
+      <div class="grid-stack-item-content">
+        <header class="tw:bg-gray-200 tw:dark:bg-dark-gray-200 tw:text-gray-800 tw:dark:text-dark-white-100 tw:p-3 tw:text-center"><span class="dashboard-widget-title">edge-rtr-04.example.net / Te0/1/0 / port_bits</span></header>
+        <div class="widget-body"><img class="graph-image" alt="" data-graph=""></div>
+      </div>
+    </div>
+    <div class="grid-stack-item w3">
+      <div class="grid-stack-item-content">
+        <header class="tw:bg-gray-200 tw:dark:bg-dark-gray-200 tw:text-gray-800 tw:dark:text-dark-white-100 tw:p-3 tw:text-center"><span class="dashboard-widget-title">Poller Load</span></header>
+        <div class="widget-body">
+          <pre style="margin:0">workers   16
+queue      0
+last run  42.1s
+rrdcached ok</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---- tables ---- -->
+    <div class="grid-stack-item w4">
+      <div class="grid-stack-item-content">
+        <header class="tw:bg-gray-200 tw:dark:bg-dark-gray-200 tw:text-gray-800 tw:dark:text-dark-white-100 tw:p-3 tw:text-center"><span class="dashboard-widget-title">Top Interfaces</span></header>
+        <div class="widget-body">
+          <table class="table table-striped table-hover" style="margin:0">
+            <thead><tr><th>Device</th><th>Interface</th><th>Traffic</th></tr></thead>
+            <tbody>
+              <tr><td><a href="#" class="device-link-up">core-sw-01</a></td><td>Te1/0/1</td><td>298.7 Mbps</td></tr>
+              <tr><td><a href="#" class="device-link-up">dist-sw-11</a></td><td>Gi1/0/24</td><td>141.2 Mbps</td></tr>
+              <tr><td><a href="#" class="device-link-up">core-sw-02</a></td><td>Te1/0/2</td><td>96.4 Mbps</td></tr>
+              <tr><td><a href="#" class="device-link-down">edge-rtr-04</a></td><td>Te0/1/0</td><td>&mdash;</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-stack-item w5">
+      <div class="grid-stack-item-content">
+        <header class="tw:bg-gray-200 tw:dark:bg-dark-gray-200 tw:text-gray-800 tw:dark:text-dark-white-100 tw:p-3 tw:text-center"><span class="dashboard-widget-title">Alerts (8)</span></header>
+        <div class="widget-body">
+          <ul class="nav nav-tabs" style="margin-bottom:6px">
+            <li class="active"><a href="#">Warning</a></li><li><a href="#">Critical</a></li>
+          </ul>
+          <table class="table table-striped table-hover" style="margin:0">
+            <thead><tr><th>Timestamp</th><th>Rule</th><th>Hostname</th><th>Ack</th><th>Notes</th></tr></thead>
+            <tbody>
+              <!-- Font Awesome classes live on the BUTTON itself. This is the shape
+                   that broke 77 glyphs when the skin set font-family on .btn. -->
+              <tr class="warning"><td>10:14:02</td><td><a href="#">Sensor over limit</a></td>
+                  <td><a href="#" class="device-link-up">dist-sw-11</a></td>
+                  <td><button class="btn btn-danger fa fa-exclamation-triangle"></button></td>
+                  <td><button class="btn btn-default fa fa-sticky-note-o"></button></td></tr>
+              <tr class="danger"><td>09:58:41</td><td><a href="#">Device down</a></td>
+                  <td><a href="#" class="device-link-down">edge-rtr-04</a></td>
+                  <td><button class="btn btn-danger fa fa-exclamation-triangle"></button></td>
+                  <td><button class="btn btn-default fa fa-sticky-note-o"></button></td></tr>
+              <tr class="success"><td>09:31:17</td><td><a href="#">Recovered</a></td>
+                  <td><a href="#" class="device-link-up">core-sw-02</a></td>
+                  <td><button class="btn btn-danger fa fa-exclamation-triangle"></button></td>
+                  <td><button class="btn btn-default fa fa-sticky-note-o"></button></td></tr>
+              <tr class="info"><td>09:02:55</td><td><a href="#">Port flapping</a></td>
+                  <td><a href="#" class="device-link-up">lab-sw-07</a></td>
+                  <td><button class="btn btn-danger fa fa-exclamation-triangle"></button></td>
+                  <td><button class="btn btn-default fa fa-sticky-note-o"></button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-stack-item w3">
+      <div class="grid-stack-item-content">
+        <header class="tw:bg-gray-200 tw:dark:bg-dark-gray-200 tw:text-gray-800 tw:dark:text-dark-white-100 tw:p-3 tw:text-center"><span class="dashboard-widget-title">Top Errors</span></header>
+        <div class="widget-body">
+          <table class="table table-striped" style="margin:0">
+            <thead><tr><th>Device</th><th>Rate</th></tr></thead>
+            <tbody>
+              <tr><td><a href="#" class="device-link-up">lab-sw-07</a></td>
+                  <td><div class="progress" style="margin:0"><div class="progress-bar progress-bar-danger" style="width:82%"></div></div></td></tr>
+              <tr><td><a href="#" class="device-link-up">dist-sw-11</a></td>
+                  <td><div class="progress" style="margin:0"><div class="progress-bar progress-bar-warning" style="width:46%"></div></div></td></tr>
+              <tr><td><a href="#" class="device-link-up">core-sw-02</a></td>
+                  <td><div class="progress" style="margin:0"><div class="progress-bar progress-bar-success" style="width:11%"></div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="height:40px"></div>
+</div>
+
+<script>
+  document.getElementById('skin-name').textContent = skin;
+  document.getElementById('skin-switcher').innerHTML = SKINS.map(function (s) {
+    return s === skin ? '<strong>' + s + '</strong>'
+                      : '<a href="?skin=' + s + '">' + s + '</a>';
+  }).join(' / ');
+
+  // Graphs are per-skin files, so they have to be wired after the skin is known.
+  Array.prototype.forEach.call(document.querySelectorAll('img[data-graph]'), function (img) {
+    var v = img.getAttribute('data-graph');
+    img.src = 'graphs/' + skin + '-port_bits' + (v === 'wide' ? '-wide' : '') + '.png';
+  });
+
+  // Availability map. The real markup is an <a> wrapping a bootstrap label:
+  //   <a><span class="label label-success widget-availability label-font-border">up</span></a>
+  // Deterministic, not random, so the page does not churn between screenshots.
+  var boxes = [], n = 190;
+  for (var i = 0; i < n; i++) {
+    var v = 'success', t = 'up';
+    if (i === 57 || i === 132) { v = 'danger'; t = 'down'; }
+    else if (i % 31 === 4)     { v = 'warning'; t = 'warn'; }
+    boxes.push('<a href="#"><span class="label label-' + v +
+               ' widget-availability label-font-border">' + t + '</span></a>');
+  }
+  document.getElementById('avail-boxes').innerHTML = boxes.join('');
+</script>
+
+</body>
+</html>
