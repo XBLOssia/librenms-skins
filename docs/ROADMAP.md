@@ -84,6 +84,13 @@ and it found things the harness structurally could not:
 Still worth a look when convenient: the rule builder (`query-builder` is
 unstyled upstream), a datetimepicker, and the narrow/mobile layout.
 
+The harness itself got closer to the real thing in the process: it now vendors
+the Vite bundle (`html/build/assets/app-*.css`) instead of the standalone
+`bootstrap.min.css` the application does not actually load. That bundle
+carries the cascade layer declaration and the `--tw-color-*` theme variables,
+without which the `tw:` utilities resolve to nothing and the harness shows
+colours the real page never renders.
+
 ---
 
 ## Completed — the coverage pass
@@ -155,10 +162,15 @@ obvious at a glance.
 
 ## Open decisions
 
-**Screenshots in the README.** There are none, and this is a visual project.
-Three captures from a real instance would be worth more than any amount of
-description — and should be taken *after* Priority 1, so they show real pages
-rather than harness mockups.
+**~~Screenshots in the README.~~ Done** — three of them, one per skin, in
+`docs/img/`. Not from the real instance: an earlier version of this note said
+they should be, but that would mean publishing hostnames, interface
+descriptions, site names and a map centred on real geography, and redacting
+all of that afterwards is error-prone and looks it.
+
+They are captures of `harness/mockup.html`, whose markup is read off a running
+instance rather than invented, with graphs rendered by rrdtool from a
+synthetic RRD. `./scripts/capture-mockups.sh` regenerates them deterministically.
 
 **Upstream.** *Status: a deliberately non-specific message has gone out on
 Discord; the full plan has not been posted anywhere yet.* Nothing below is

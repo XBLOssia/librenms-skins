@@ -40,6 +40,47 @@ Verified against LibreNMS master @ `63e0394` (2026-09-17).
 
 ---
 
+## What they look like
+
+Each is the same LibreNMS dashboard, same markup, same data — only the skin
+differs.
+
+### Terran
+Gunmetal plating, hazard yellow, green phosphor readouts. Square and riveted.
+
+![The Terran skin on a LibreNMS dashboard](docs/img/dashboard-terran.png)
+
+### Protoss
+Void blue and keratinous gold, chamfered corners, psionic teal.
+
+![The Protoss skin on a LibreNMS dashboard](docs/img/dashboard-protoss.png)
+
+### Zerg
+Creep purple and bone, acid green against ember and magenta. Asymmetric,
+uneven, grown rather than built.
+
+![The Zerg skin on a LibreNMS dashboard](docs/img/dashboard-zerg.png)
+
+**None of these are screenshots of a production instance.** Every hostname,
+interface, site and number is invented, and the page says so in its own
+header. They are captures of [the offline mockup](#the-dashboard-mockup),
+whose markup is read off a live instance so the rendering is faithful. The
+graphs are genuine rrdtool output from a synthetic RRD — a real renderer, with
+traffic that never existed.
+
+Regenerate them with:
+
+```bash
+./scripts/make-demo-graphs.sh     # once; needs rrdtool
+python -m http.server 8777
+./scripts/capture-mockups.sh      # headless Chrome -> docs/img/
+```
+
+Deterministic by construction — fixed window size, fixed device scale factor,
+fixed epoch in the synthetic data — so re-running does not churn the repo.
+
+---
+
 ## Install
 
 On the LibreNMS host:
@@ -228,12 +269,19 @@ skins/<name>/<name>.css     the skin - token block at top drives everything
 skins/<name>/fonts/         bundled OFL webfonts + licence notices
 skins/<name>/FONTS.md       typography rationale and how to swap faces
 harness/index.html          static preview, real LibreNMS CSS, real DOM
+harness/mockup.html         full dashboard mockup, invented data
+harness/graphs/             rrdtool graphs rendered from a synthetic RRD
 harness/colorway.html       a skin's tokens and graph ramps, rendered
 harness/audit.js            live-page contrast + stock-colour audit
 scripts/install.sh          install a skin onto a LibreNMS host
 scripts/uninstall.sh        remove skins and restore the previous config
 scripts/fetch-fonts.ps1     regenerate the bundled fonts reproducibly
 scripts/coverage.sh         report which components no skin has styled yet
+scripts/make-demo-graphs.sh generate the mockup's graphs (needs rrdtool)
+scripts/capture-mockups.sh  screenshot the mockup per skin, headlessly
+scripts/patch-core.sh       optional: let port graphs read their colours
+patches/                    that patch, as a reviewable unified diff
+docs/img/                   the screenshots above
 docs/DEPLOYMENT.md          install/uninstall runbook, persistence, rollback
 docs/FINDINGS.md            what building these surfaced about theming LibreNMS
 docs/PROPOSAL.md            upstream proposal, ready to post
