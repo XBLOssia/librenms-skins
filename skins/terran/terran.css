@@ -649,7 +649,10 @@ html.dark code {
  * -------------------------------------------------------------------------- */
 html.dark .graph-image,
 html.dark img.graph-image {
-  background-color: #fff;       /* keeps RRD PNGs legible on dark plating */
+  /* Was #fff. graph.conf sets RRDtool BACK to the skin hull, so the PNG is
+   * opaque and dark; a white backdrop only showed as a flash while the image
+   * loaded, and as a white box for any graph that failed to render. */
+  background-color: var(--tn-plate);       /* keeps RRD PNGs legible on dark plating */
   border: 1px solid #000;
   border-radius: var(--tn-radius);
   box-shadow: var(--tn-bevel);
@@ -1470,4 +1473,138 @@ html.dark .nav > li > a:focus {
  * -------------------------------------------------------------------------- */
 html.dark .btn:not(.fa):not([class*="fa-"]) {
   font-family: var(--tn-font-chrome);
+}
+
+
+/* -----------------------------------------------------------------------------
+ * 15. UPSTREAM CONTRAST BUG: the select2 placeholder
+ *
+ * tw_dark.css ships:
+ *
+ *   .dark .select2-container--bootstrap .select2-selection--single
+ *     .select2-selection__placeholder { color: #272b30 }
+ *
+ * #272b30 is an input BACKGROUND from the Darkly bootswatch being used as a
+ * TEXT colour. It renders near-black on near-black and measures 1.2:1 - the
+ * "All Devices" and "All Types" filters on /eventlog are effectively invisible.
+ * Stock LibreNMS dark has this bug too; it is not one the skin introduced.
+ * This is the second instance of the same class of bug - see section 2c.
+ *
+ * Upstream's selector is (0,4,0), so the whole chain has to be mirrored.
+ * The --multiple placeholder and the clear affordance are stock greys that
+ * were never darkened at all; they are retinted for consistency, not contrast.
+ * -------------------------------------------------------------------------- */
+html.dark .select2-container--bootstrap .select2-selection--single .select2-selection__placeholder,
+html.dark .select2-container--bootstrap .select2-selection--multiple .select2-selection__placeholder {
+  color: var(--tn-text-mute);
+}
+html.dark .select2-container--bootstrap .select2-selection__clear {
+  color: var(--tn-text-dim);
+}
+html.dark .select2-container--bootstrap .select2-selection__clear:hover {
+  color: var(--tn-danger-text);
+}
+
+
+/* -----------------------------------------------------------------------------
+ * 16. RETINTING CORE'S TAILWIND PALETTE
+ *
+ * LibreNMS writes Tailwind utilities straight into Blade templates, and 22 of
+ * the colour ones carry the `!` important modifier. Those compile into
+ * Tailwind's `utilities` CASCADE LAYER with !important:
+ *
+ *   @layer utilities {
+ *     .tw\:dark\:text-red-500\!:where(.dark, .dark *) {
+ *       color: var(--tw-color-red-500) !important;
+ *     }
+ *   }
+ *
+ * An UNLAYERED !important - all custom_css normally has - cannot beat that at
+ * any specificity. For !important the cascade REVERSES: earlier layers win and
+ * unlayered !important is weakest of all.
+ *
+ * But the declaration resolves `var(--tw-color-red-500)` at USE time, against
+ * the custom property inherited by the element. Custom property lookup does
+ * not care about layers or importance. So redefining the theme variable
+ * retints the utility - important, layered, or neither.
+ *
+ * Verified on a live instance, transitions suppressed, every result read back
+ * as normalised RGB, against `.tw\:dark\:text-red-500\!` (stock 3.3:1):
+ *
+ *   unlayered !important, specificity (0,2,1)   no change
+ *   @layer utilities, no !important             no change
+ *   a NEW layer declared after utilities        no change
+ *   `--color-red-500` redefined on html.dark    no change  <- WRONG NAME
+ *   `--tw-color-red-500` redefined on html.dark WINS
+ *   re-opening @layer utilities with !important WINS (also works, worse idea)
+ *
+ * The fourth row is why an earlier draft of docs/FINDINGS.md claimed these
+ * utilities were unreachable. LibreNMS configures Tailwind with the `tw`
+ * prefix, which prefixes the THEME VARIABLES too - `--tw-color-red-500`, not
+ * `--color-red-500`. The original experiment tested the unprefixed name,
+ * got no change, and concluded the wall was in the cascade. It was a typo.
+ *
+ * Re-opening `@layer utilities` also works, but it couples the skin to the
+ * layer NAME Tailwind emits. Variables are a documented Tailwind interface;
+ * the layer name is an implementation detail. Variables are used here, and
+ * the layer block below is kept only for what variables cannot express.
+ * -------------------------------------------------------------------------- */
+html.dark {
+  /* LibreNMS's own dark ramps. These exist to define the dark theme, so they
+   * map cleanly onto the skin's surfaces and text - 100 is lightest surface /
+   * brightest text, and the numbers run in opposite directions between them.
+   *   dark-gray-100 #4f565d .. dark-gray-500 #272b30   (surfaces, dark end up)
+   *   dark-white-100 #f9fafb .. dark-white-400 #acb6bf (text, bright end down)
+   * 187 uses across the Blade templates between them, and another 62 for
+   * tw:dark:border-dark-gray-* - borders read the same five variables as
+   * the backgrounds, so those come along for free. */
+  --tw-color-dark-gray-500:  var(--tn-hull);
+  --tw-color-dark-gray-400:  var(--tn-plate);
+  --tw-color-dark-gray-300:  var(--tn-plate-raised);
+  --tw-color-dark-gray-200:  var(--tn-plate-hi);
+  --tw-color-dark-gray-100:  var(--tn-edge);
+
+  --tw-color-dark-white-100: var(--tn-text-bright);
+  --tw-color-dark-white-200: var(--tn-text);
+  --tw-color-dark-white-300: var(--tn-text-dim);
+  --tw-color-dark-white-400: var(--tn-text-mute);
+
+  /* Semantic colours core reaches for directly. red-500 on the panel body
+   * measured 3.3:1 - below AA - which is what surfaced this whole section. */
+  --tw-color-red-500:  var(--tn-danger-text);
+  --tw-color-red-400:  var(--tn-danger-text);
+  --tw-color-blue-400: var(--tn-console);
+}
+
+/* What variables cannot express -------------------------------------------
+ * A palette token can only carry one meaning, and `white` carries two:
+ * `tw:dark:bg-white!` wants a SURFACE while `tw:dark:text-white!` wants the
+ * brightest TEXT. Redefining --tw-color-white would satisfy one and destroy
+ * the other, and both appear on the same element in popup.blade.php. Same for
+ * gray-100/200, which are surfaces here and borders elsewhere.
+ *
+ * So these few keep the layer re-open. It fails safe: if Tailwind ever renames
+ * the layer, the rules stop applying and the utility keeps its stock colour -
+ * nothing breaks, it just goes untinted.
+ *
+ * resources/views/graphs/show.blade.php:53 is the one that matters - the date
+ * range field on every graph page carries `tw:dark:bg-white!`, a white input
+ * in dark mode. */
+@layer utilities {
+  html.dark .tw\:dark\:bg-white\!,
+  html.dark .tw\:bg-white\!,
+  html.dark .tw\:bg-gray-100\! {
+    background-color: var(--tn-plate) !important;
+  }
+  html.dark .tw\:hover\:bg-gray-200\!:hover,
+  html.dark .tw\:dark\:hover\:bg-gray-200\!:hover {
+    background-color: var(--tn-plate-hi) !important;
+  }
+  /* Disabled ports. gray-500 measures 3.5:1 here; de-emphasised still has to
+   * be legible, so this lands on the muted token rather than something dimmer. */
+  html.dark .tw\:text-gray-500\!,
+  html.dark .tw\:visited\:text-gray-500\!,
+  html.dark .tw\:visited\:text-gray-500\!:visited {
+    color: var(--tn-text-mute) !important;
+  }
 }

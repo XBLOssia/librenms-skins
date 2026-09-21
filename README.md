@@ -28,9 +28,11 @@ the remainder being dead Observium-era classes with no references in
 ./scripts/coverage.sh /opt/librenms          # the floor
 ```
 
-Coverage counts selectors answered, not whether it looks right. The real test
-is [the live audit](#auditing-a-live-instance), which all three skins currently
-pass with zero findings on `/`, `/devices` and `/alert-rules`.
+Coverage counts selectors answered, not whether it looks right — and it does
+not count the inline `tw:` utilities at all, which is where several real bugs
+lived. The real test is [the live audit](#auditing-a-live-instance), which all
+three skins currently pass with zero findings on `/`, `/devices`,
+`/alert-rules`, `/eventlog` and the graph pages.
 
 [docs/ROADMAP.md](docs/ROADMAP.md) has the backlog and open decisions.
 
@@ -172,8 +174,10 @@ actually computed.
 
 That is what found the dashboard widget header (its colour lives in a
 JavaScript string), the vendored Leaflet cluster markers, 77 icon buttons whose
-glyphs the skin had broken, and five contrast failures the skins introduced
-themselves. A stylesheet-based check saw none of them.
+glyphs the skin had broken, five contrast failures the skins introduced
+themselves, and two that core ships — the `/eventlog` filter placeholder at
+1.2:1 and the down-device links at 3.3:1. A stylesheet-based check saw none of
+them.
 
 The harness reproduces LibreNMS's real DOM and loads the real stylesheets in
 the real order from `resources/views/layouts/librenmsv1.blade.php`. Vendored

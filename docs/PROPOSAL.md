@@ -128,8 +128,10 @@ not any individual value.
    (`resources/views/overview/default.blade.php:516`), so its colour isn't in a
    stylesheet.
 5. **Graph rendering.** `rrdgraph_def_text_dark` for chrome, `graph_colours.*`
-   for series, and 58 hardcoded literals in the shared `generic_*` helpers that
-   bypass both.
+   for series, and 58 hardcoded literals in the shared `generic_*` helpers.
+   Ten of those fifteen helpers do read `graph_colours`; **five read no config
+   at all** — 40 literals, 169 graph definitions, including every port traffic
+   graph in the application.
 
 **264 distinct first-party colours.** That isn't a palette; it's accretion.
 Consolidated, it's plausibly 40–60 real tokens.
@@ -149,8 +151,7 @@ comparatively small *because* of 0–2.
 
 #### Phase 0 — four small fixes, no theme system required
 
-**0a. Drop the `!` from inline colour utilities.** 9 files, no visual change,
-and it is the only item here that changes *impossible* into *possible*.
+**0a. Drop the `!` from inline colour utilities.** 9 files, no visual change.
 
 A `tw:…!` utility written inline in a template compiles to `!important` inside
 Tailwind's `utilities` cascade layer. `webui.custom_css[]` is injected last and
@@ -159,12 +160,37 @@ earlier layers win and unlayered `!important` is the weakest of all. A
 stylesheet cannot retroactively place itself in an earlier layer, because layer
 order follows first declaration and `app.css` already declared them.
 
-The practical result: **a theme cannot override these at any specificity, with
-or without `!important`.** Verified four ways against a live instance, on
-`tw:dark:text-red-500!` (the red port links in Top Errors, measured at 3.3:1 —
-below WCAG AA). Unlayered `!important` at higher specificity, the same rule
-inside `@layer utilities`, inside `@layer base`, and redefining
-`--tw-color-red-500` all left the computed colour unchanged.
+So a theme **cannot override these with `!important` of its own, at any
+specificity.** Measured on `tw:dark:text-red-500!` — the red device links on
+`/eventlog`, at 3.3:1, below WCAG AA.
+
+It *can* override them two other ways, and I want to be straight about this
+because an earlier draft of my notes claimed it couldn't:
+
+- **Redefine the theme variable** the declaration reads —
+  `--tw-color-red-500`. The `var()` resolves at use time against the inherited
+  custom property, and that lookup doesn't care about layers or importance.
+- **Re-open `@layer utilities`** from `custom_css` and use `!important` there.
+  Same layer, same importance, later source — it wins, even at specificity
+  (0,1,0).
+
+I originally tested `--color-red-500`, without the `tw` prefix LibreNMS
+configures. Nothing is defined under that name, so nothing happened, and I read
+the null result as a property of the cascade rather than as my own typo. Worth
+saying plainly rather than having someone find it later.
+
+That makes this a weaker argument than I first thought, but not an empty one:
+
+- Both workarounds are couplings to **Tailwind internals**, not to anything
+  LibreNMS promises. Change the prefix or the layer name and every theme
+  silently reverts to stock, with no error anywhere.
+- The variable route is **all or nothing**. Retinting `red-500` changes it
+  everywhere; there is no way to fix one usage. `!important` on an inline
+  utility is precisely a declaration that no one downstream may disagree with.
+
+So it isn't *impossible → possible*. It's *requires two undocumented Tailwind
+facts → requires nothing*. Deleting a character where nothing depends on it
+still looks like the cheaper side of that trade.
 
 ```bash
 grep -rhoE 'tw:(dark:)?(text|bg|border|ring|divide)-[a-z0-9-]+!' \
@@ -172,7 +198,9 @@ grep -rhoE 'tw:(dark:)?(text|bg|border|ring|divide)-[a-z0-9-]+!' \
 ```
 
 **71 uses, 22 distinct, across 9 files.** They include `tw:bg-white!` and
-`tw:dark:bg-white!` — a forced white background no theme can change.
+`tw:dark:bg-white!` on the date-range field at
+`resources/views/graphs/show.blade.php:53` — a white input in dark mode, on
+every graph page in the application.
 
 Where the `!` is load-bearing it should stay; where it isn't, dropping it costs
 nothing and is invisible. Where it genuinely is needed, moving the declaration
@@ -186,18 +214,25 @@ added `.widget-header` to a sibling element for exactly this reason.
 
 **0c. Tokenise the 58 colour literals in the shared graph helpers.** 15 files.
 Pixel-identical if defaults keep current values. These helpers are referenced by
-1,242 graph definitions, so this is the best effort-to-impact ratio in the whole
-proposal:
+1,322 graph definitions, so this is the best effort-to-impact ratio in the whole
+proposal.
+
+Five of the fifteen read **no config at all** — `generic_data`,
+`generic_duplex`, `generic_simplex`, `generic_multi_data`,
+`generic_multi_bits`, together 40 of the 58 literals and 169 of the
+references. `generic_data.inc.php` is where `#90B040` and `#8080C0` live: the
+green and lavender on every port traffic graph, with no config key that
+reaches them.
 
 | Helper | Literals | References |
 |---|---|---|
 | `generic_stats.inc.php` | **1** | **527** |
 | `generic_multi_line.inc.php` | **1** | **422** |
-| `generic_simplex.inc.php` | 5 | 122 |
+| `generic_simplex.inc.php` | 5 | 120 |
 | `generic_duplex.inc.php` | 7 | 28 |
 | **`generic_data.inc.php`** | **18** | **20** (incl. `port_bits`) |
-| …10 more | 26 | 123 |
-| **Total** | **58 across 15 files** | **1,242** |
+| …10 more | 26 | 205 |
+| **Total** | **58 across 15 files** | **1,322** |
 
 `generic_data.inc.php` is worth doing first within 0c — it renders `port_bits`,
 the traffic graph on effectively every dashboard, and hardcodes:
@@ -230,6 +265,22 @@ text dark:
 
 On the alert rules page, where most rows carry one of these, that's dark body
 text on bright fills — in the stock dark theme, with no custom CSS involved.
+
+The same file has a second instance, and it's a cleaner illustration of why
+Phase 1 matters:
+
+```css
+.dark .select2-container--bootstrap .select2-selection--single
+  .select2-selection__placeholder { color: #272b30; }
+```
+
+`#272b30` is `--tw-color-dark-gray-500` — the **darkest surface** in the dark
+ramp, used as a text colour. On `/eventlog` the "All Devices" and "All Types"
+filter labels measure **1.2:1**. Both bugs are the same mistake: a surface
+value used as ink. A token contract that separates the two makes it hard to
+write, which is the argument for Phase 1 made by core's own stylesheet rather
+than by me.
+
 Worth fixing regardless of everything else here.
 
 #### Phase 1 — define the token contract

@@ -19,13 +19,18 @@ of this document is to supply the numbers.
    two *and* three classes deep, so each component must be checked against the
    rule it is fighting. Getting this wrong left the **dashboard** — the landing
    page — unthemed on a live install.
-3. **71 colour declarations cannot be overridden at all.** A `tw:…!` utility
-   written inline in a template lands `!important` inside a cascade layer, and
-   `webui.custom_css` — loaded last, unlayered — structurally cannot beat it.
-   Verified four ways against a live instance. This is the one that no amount
-   of CSS skill works around.
-4. Graphs have **their own colour system**, unreachable from CSS, keyed off a
-   two-value boolean, and bypassed by 149 graph files that hard-code hex anyway.
+3. **22 colour utilities land `!important` inside a cascade layer.** A `tw:…!`
+   written inline in a template compiles into Tailwind's `utilities` layer, and
+   `webui.custom_css` — loaded last, unlayered — structurally cannot beat it
+   with `!important` of its own, at any specificity. They *are* reachable, but
+   only by redefining the Tailwind theme variable behind them, or by re-opening
+   Tailwind's own layer. An earlier draft of this document said they were
+   unreachable. **That was wrong, and it was wrong because of a typo in my own
+   test** — section 2 keeps the correction and the bad test that caused it.
+4. Graphs have **their own colour system**, unreachable from CSS and keyed off
+   a two-value boolean. Graph *chrome* is configurable and themes cleanly; the
+   *data series* often do not, because **5 shared helpers hard-code 40 hex
+   literals and read no config at all** — and 169 graph files delegate to them.
 5. Some colour **is not in a stylesheet at all** — the dashboard widget title
    bar is built in a JavaScript string with inline utilities and no class, so
    no stylesheet audit can find it.
@@ -158,7 +163,7 @@ point.
 | `!` appears in | Compiles to | Can `custom_css` override it? |
 |---|---|---|
 | `@apply … tw:text-white!` inside `app.css` | `!important` on an **unlayered** rule | **Yes** — match the specificity and use `!important` |
-| `tw:text-white!` inline in a Blade template | `!important` inside the **`utilities` cascade layer** | **No.** Not by any means found. |
+| `tw:text-white!` inline in a Blade template | `!important` inside the **`utilities` cascade layer** | **Not with `!important`.** Only by redefining the theme variable, or re-opening the layer. |
 
 The second row is a hard wall, and it is a consequence of load order rather
 than a quirk:
@@ -176,42 +181,113 @@ than a quirk:
   order follows first declaration, and `app.css` already declared them.
 
 So an `!important` in `custom_css` structurally cannot beat an `!important`
-inside any `app.css` layer.
+inside any `app.css` layer. That much is real, and it is worth knowing.
 
-### Verified, not argued
+What it does *not* mean is that the declaration is unthemeable. See below.
 
-Tested against a live instance on the red port links in the Top Errors widget
+### Verified — and then corrected
+
+Tested against a live instance on the red device links on `/eventlog`
 (`tw:dark:text-red-500!`, measured at **3.3:1** — below WCAG AA). Every result
-was read back as normalised RGB rather than trusting the computed-value string:
+is read back as normalised RGB rather than trusting the computed-value string,
+**with CSS transitions suppressed** — see the warning below.
 
 | Attempt | Result |
 |---|---|
 | Unlayered `!important`, specificity (0,2,1) vs upstream (0,1,0) | no change |
-| Same rule inside `@layer utilities` | no change |
-| Same rule inside `@layer base` | no change |
-| Redefining `--tw-color-red-500` on `html.dark` | no change |
+| Same rule inside `@layer utilities`, *without* `!important` | no change |
+| Same rule inside a **new** layer declared after `utilities`, `!important` | no change |
+| Redefining `--color-red-500` on `html.dark` | no change |
+| **Redefining `--tw-color-red-500` on `html.dark`** | **overrides it** |
+| **Re-opening `@layer utilities` with `!important`** | **overrides it** — even at specificity (0,1,0), on source order alone |
 
-The winning rule throughout:
+The rule being fought throughout:
 `.tw\:dark\:text-red-500\!:where(.dark, .dark *)`, `!important`, layer
 `utilities`.
 
-### How much is out of reach
+#### The correction, and the mistake that caused it
+
+An earlier draft of this document listed only the first four rows and concluded
+that these declarations were **unreachable from `custom_css` by any means**. It
+called that "the strongest single argument in this document".
+
+It was wrong. Two things override them, and row 4 is why I missed both:
+
+**LibreNMS configures Tailwind with the `tw` prefix, and that prefixes the
+theme variables too.** The variable is `--tw-color-red-500`. I tested
+`--color-red-500`, which is not defined by anything, so nothing happened — and
+I read that null result as a property of the cascade rather than as a typo.
 
 ```bash
-grep -rhoE 'tw:(dark:)?(text|bg|border|ring|divide)-[a-z0-9-]+!'      --include='*.blade.php' . | sort -u
+# the variable exists, under the prefixed name:
+grep -o 'var(--tw-color-red-500)' html/css/app-*.css | head -1
 ```
 
-**71 uses, 22 distinct colour utilities, across 9 Blade files** — every one of
-them unreachable from `custom_css`. They include `tw:bg-white!` and
-`tw:dark:bg-white!`: a forced white background that no theme can change.
+The declaration resolves `var(--tw-color-red-500)` at **use** time, against the
+custom property the element inherits. Custom property lookup does not care
+about layers or importance — so redefining the variable retints the utility
+regardless of the `!important` sitting in front of it.
 
-This is the strongest single argument in this document. Everything else here is
-a theme author having to work harder than they should. This is a theme author
-being unable to do the thing at all, and no amount of CSS skill changes it.
+**Second trap, for anyone reproducing this:** run it with transitions
+suppressed. My first re-test appeared to show a *different* wrong answer,
+because `getComputedStyle` caught a colour mid-transition and serialised it as
+`oklab(…)` — the same colour, in different clothes.
 
-**The fix is trivial upstream:** drop the `!` where nothing depends on it, or
-move the declaration into a component class. Neither needs a theme system, a
-token system, or any visual change.
+```js
+document.head.insertAdjacentHTML('beforeend',
+  '<style>*,*::before,*::after{transition:none!important;animation:none!important}</style>');
+```
+
+#### What survives the correction
+
+The cascade-layer wall is real. The conclusion drawn from it was not. What is
+left is a smaller and more honest complaint:
+
+- `!important` on an inline utility means a theme **cannot override one usage**.
+  Retinting the variable changes `red-500` *everywhere*. There is no way to say
+  "this particular badge should be a different red" — it is all or nothing.
+- The only two mechanisms that work are both **couplings to Tailwind internals**
+  — the prefixed theme-variable names, or the layer name Tailwind emits. Neither
+  is a LibreNMS interface. Rename either and every theme silently reverts to
+  stock, with no error.
+- None of it is discoverable. Getting to something true took a wrong answer, a
+  misread null result, and a transition artefact.
+
+**The fix is still trivial upstream, and cheaper than any of the above:** drop
+the `!` where nothing depends on it, or move the declaration into a component
+class. Neither needs a theme system, a token system, or any visual change.
+
+### How much of it there is
+
+```bash
+grep -rhoE 'tw:(dark:)?(text|bg|border|ring|divide)-[a-z0-9-]+!' \
+  --include='*.blade.php' . | sort -u
+```
+
+**22 distinct colour utilities** carrying `!`, across 9 Blade files. They
+include `tw:bg-white!` and `tw:dark:bg-white!` — a forced white background in
+dark mode, on the date-range field that sits on every graph page
+(`resources/views/graphs/show.blade.php:53`). That is the most visible single
+item in this document, and a one-character fix upstream.
+
+For scale, these are the colour surfaces a theme has to reach *at all*, `!` or
+not:
+
+| Utility family | Uses in Blade | What it is |
+|---|---|---|
+| `tw:dark:text-dark-white-{100..400}` | 110 | core's dark-mode text ramp |
+| `tw:dark:bg-dark-gray-{100..500}` | 77 | core's dark-mode surface ramp |
+| `tw:dark:border-dark-gray-*` | 62 | seams |
+| **total** | **249** | |
+
+Those ramps are LibreNMS's *own* semantic palette, which is the good news: all
+249 come from nine variables, and `bg-` and `border-` share the same five, so a
+skin remaps the lot by redefining nine custom properties. This repo's skins do
+exactly that — see section 16 of any skin stylesheet.
+
+```bash
+grep -rhoE 'tw:dark:(text-dark-white|bg-dark-gray|border-dark-gray)-[0-9]+'   --include='*.blade.php' . | wc -l
+```
 
 This is the mechanism behind
 [PR #20294](https://github.com/librenms/librenms/pull/20294), where the mono
@@ -283,8 +359,35 @@ the **alert rules page**, where most rows carry one of these classes, this is
 the worst contrast in the application — and it is that way in the stock dark
 theme, with no custom CSS involved.
 
+### A second instance: the select2 placeholder
+
+`tw_dark.css` also ships:
+
+```css
+.dark .select2-container--bootstrap .select2-selection--single
+  .select2-selection__placeholder { color: #272b30; }
+```
+
+`#272b30` is not a text colour. It is `--tw-color-dark-gray-500`, the **darkest
+surface** in core's own dark ramp, used here as `color`. The result on
+`/eventlog` is a filter whose "All Devices" and "All Types" labels measure
+**1.2:1** against the field behind them — effectively invisible, in the stock
+dark theme, with no custom CSS involved.
+
+Measured on a live instance:
+
+```js
+const el = document.querySelector('.select2-selection__placeholder');
+getComputedStyle(el).color            // rgb(39, 43, 48)  == #272b30
+```
+
+Both of these are the same underlying mistake — a **surface** value used as an
+**ink** value — which is the thing a real token contract would make hard to get
+wrong. That is the argument for section "What would actually help", made by
+core's own stylesheet rather than by me.
+
 Worth fixing upstream independently of any theming work. A theme can only paper
-over it, which is what this repo's skins now do.
+over it, which is what this repo's skins now do (section 15 of each skin).
 
 ---
 
@@ -411,6 +514,42 @@ $rrd_options[] = 'LINE:dout' . $format . '#606090:Out';
    `graph_colours.*`, from `rrdgraph_def_text_dark`, and from CSS. **Verified
    empirically**: two skins with completely different palettes — one teal/gold,
    one acid-green/magenta — render byte-identical port graphs.
+
+### Which graphs are actually stuck
+
+Graph *chrome* — background, grid, frame, arrows — is configurable via
+`rrdgraph_def_text_dark` and themes cleanly on every graph. The *data series*
+are a different story, and the split is sharp:
+
+| | Helpers | Hex literals | Graph files delegating to them |
+|---|---|---|---|
+| Read `graph_colours` config | 10 | 18 | — |
+| **Read no config at all** | **5** | **40** | **169** |
+
+The five with no config path whatsoever:
+
+| Helper | Literals | Included by | Notable colours |
+|---|---|---|---|
+| `generic_simplex.inc.php` | 5 | 120 | `#ffffff`, `#c5c5c5` |
+| `generic_duplex.inc.php` | 7 | 28 | `#666666`, `#999999` |
+| `generic_data.inc.php` | 18 | 20 | `#90B040`, `#8080C0` |
+| `generic_multi_data.inc.php` | 6 | 1 | `#999999`, `#666666` |
+| `generic_multi_bits.inc.php` | 4 | 0 | `#999999` |
+
+`#90B040` and `#8080C0` are the green and lavender on every port traffic graph
+in the application. `port_bits` resolves to `generic_data.inc.php`, which names
+them directly. No config key reaches them.
+
+```bash
+# helpers that hard-code but never consult config
+for f in includes/html/graphs/generic_*.php; do
+  n=$(grep -coE '#[0-9A-Fa-f]{6}' "$f"); c=$(grep -c graph_colours "$f")
+  [ "$c" -eq 0 ] && echo "$(basename $f) literals=$n"
+done
+```
+
+Verified the only way that settles it: two skins with completely different
+palettes render **byte-identical** port graphs.
 
 ### Correction: it is 58 literals, not 149 files
 
