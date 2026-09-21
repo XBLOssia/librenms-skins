@@ -167,6 +167,85 @@ is correct — but it bites every single deploy.
 
 ---
 
+## Optional: the port-graph core patch
+
+**This is the only thing in this repo that touches a LibreNMS core file.**
+Everything else lives in `html/css/custom/` and a few config rows. This is a
+different risk class, so it is opt-in, separate from `install.sh`, and never
+run automatically.
+
+### Why
+
+`port_bits` — the traffic graph on effectively every dashboard — renders
+through `includes/html/graphs/generic_data.inc.php`, which hard-codes its six
+series colours and reads no config at all. Without the patch, port graphs stay
+stock green-and-lavender under every skin while the rest of the graph themes
+correctly. The graph *chrome* (background, grid, frame) is themed either way;
+it is only the series that are stuck.
+
+### What it changes
+
+Two files:
+
+| File | Change |
+|---|---|
+| `includes/html/graphs/generic_data.inc.php` | reads `graph_colours.port_in` / `.port_out`, defaulting to the values it previously hard-coded |
+| `resources/definitions/config_definitions.json` | declares those two keys |
+
+The second is not optional. `lnms config:set` validates every key against the
+definitions file and refuses anything undeclared — *"This is not a valid
+setting."* — and the only wildcard LibreNMS defines is `alert.macros.rule.*`.
+
+**With no config set, output is byte-identical.** Verified rather than
+asserted: the same graph URL, with `from`/`to` pinned so the data window is
+fixed, produced the same SHA-256 and the same 141,496 bytes before and after
+patching.
+
+```bash
+./scripts/patch-core.sh status
+./scripts/patch-core.sh apply     # then re-run install.sh to set the colours
+./scripts/patch-core.sh revert
+```
+
+`apply` dry-runs first, so a version drift fails loudly instead of scattering
+`.rej` files through core. It keeps a pristine `*.pre-skins-patch` copy of each
+file, and `revert` prefers that copy over reversing the diff.
+
+### The catch: `daily.sh` reverts it
+
+`daily.sh` updates LibreNMS with `git pull` and `git checkout`, which restores
+tracked files. **Both patched files go back to stock on every update.** The
+config values survive — they are database rows — but they stop being read, so
+port graphs quietly return to green and lavender.
+
+Re-apply after each update. The script is idempotent, so this is safe to
+automate:
+
+```bash
+# /etc/cron.d/librenms-skins-patch  — after daily.sh has run
+30 1 * * *  root  /opt/librenms-skins/scripts/patch-core.sh apply >/dev/null 2>&1
+```
+
+Check it whenever graphs look wrong after an upgrade:
+
+```bash
+./scripts/patch-core.sh status
+```
+
+### Reverting completely
+
+```bash
+./scripts/patch-core.sh revert
+./scripts/uninstall.sh
+```
+
+Order does not matter. `uninstall.sh` clears `graph_colours.port_in` /
+`.port_out` back to unset, and it checks whether the core patch is still
+applied and tells you rather than assuming either way. With the patch reverted
+and the keys cleared, nothing of this repo remains anywhere in LibreNMS.
+
+---
+
 ## Uninstall
 
 ```bash

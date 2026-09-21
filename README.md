@@ -77,7 +77,8 @@ lnms config:clear webui.custom_css
 
 ### Safety
 
-Nothing in LibreNMS core is modified, no schema changes, no services touched —
+By default, nothing in LibreNMS core is modified, no schema changes, no
+services touched —
 the entire footprint is one config row and one directory of static files under
 `html/css/custom/`, which is gitignored by LibreNMS. Verified against
 `daily.sh`: it updates with `git pull` and `git checkout` and never runs
@@ -86,6 +87,13 @@ the entire footprint is one config row and one directory of static files under
 > `webui.custom_css` is instance-wide. Every user on the instance gets the same
 > skin; LibreNMS has no per-user custom theme selection. See
 > [docs/FINDINGS.md](docs/FINDINGS.md) §6.
+
+> **One optional exception.** `scripts/patch-core.sh` patches two core files
+> so port traffic graphs read their colours from config instead of six
+> hard-coded hexes. It is opt-in, byte-identical with no config set, fully
+> reversible — and `daily.sh` reverts it on every LibreNMS update, so it has to
+> be re-applied. Without it, port graphs stay stock green-and-lavender while
+> everything else themes. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 Full runbook, rollback detail and troubleshooting:
 **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**.

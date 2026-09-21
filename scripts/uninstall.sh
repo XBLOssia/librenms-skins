@@ -142,6 +142,19 @@ echo "  OK   webui.custom_css -> $("$LNMS" config:get webui.custom_css 2>/dev/nu
 cat <<'EOF'
 
 Done. Hard-refresh the browser (Ctrl-Shift-R) to drop the cached stylesheet.
-
-LibreNMS core was never modified, so there is nothing further to revert.
 EOF
+
+# Core is only modified if the optional port-graph patch was applied, which is
+# a separate, opt-in step. Say so accurately rather than claiming either way.
+if grep -q 'graph_colours.port_in' "$LIBRENMS/includes/html/graphs/generic_data.inc.php" 2>/dev/null; then
+  cat <<'EOF'
+NOTE: the optional core patch IS still applied to
+  includes/html/graphs/generic_data.inc.php
+Port graphs now fall back to their stock colours (the patch defaults to them),
+so nothing looks wrong, but core is still modified. To restore it fully:
+
+  ./scripts/patch-core.sh revert
+EOF
+else
+  echo "LibreNMS core was not modified, so there is nothing further to revert."
+fi

@@ -124,13 +124,22 @@ if [ -f "$GRAPHCONF" ]; then
     esac
   }
 
-  # Record originals once, before the first change.
-  if [ "$DRY" -eq 0 ] && [ ! -f "$CUSTOM/.previous-graph" ]; then
-    : > "$CUSTOM/.previous-graph"
+  # Record originals once PER KEY - not once per file.
+  #
+  # This used to guard on the whole file existing, which was wrong: graph.conf
+  # gains keys over time (graph_colours.port_in / .port_out arrived with the
+  # optional core patch). With a whole-file guard, any key added after the
+  # first install was never recorded, so uninstall silently left it behind.
+  # Recording per key is idempotent and handles a graph.conf that grows.
+  if [ "$DRY" -eq 0 ]; then
+    [ -f "$CUSTOM/.previous-graph" ] || : > "$CUSTOM/.previous-graph"
     while IFS= read -r line; do
       case "$line" in ''|\#*) continue ;; esac
       k="${line%%=*}"
-      printf '%s=%s\n' "$k" "$(getcfg "$k")" >> "$CUSTOM/.previous-graph"
+      esc="$(printf '%s' "$k" | sed 's/[.[\*^$]/\\&/g')"
+      if ! grep -q "^$esc=" "$CUSTOM/.previous-graph"; then
+        printf '%s=%s\n' "$k" "$(getcfg "$k")" >> "$CUSTOM/.previous-graph"
+      fi
     done < "$GRAPHCONF"
   fi
 

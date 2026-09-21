@@ -1,0 +1,93 @@
+From: librenms-skins <https://github.com/XBLOssia/librenms-skins>
+Subject: [PATCH] generic_data: read port series colours from config
+
+port_bits renders through this helper, which hard-codes its six series
+colours and reads no config at all. Every other shared graph helper that
+carries a palette reads graph_colours.*; this one predates that mechanism
+and never got converted.
+
+Introduces graph_colours.port_in and graph_colours.port_out, each a
+three-tone ramp (palest first: max fill, area fill, outline). Both default
+to the values previously hard-coded here, so an instance that sets neither
+key renders byte-identically - verified by comparing PNG output.
+
+The file's other twelve literals - percentile rules, port-speed lines and
+prediction overlays - are deliberately untouched. They are arguably meant
+to be fixed, and leaving them out keeps the diff to one concern.
+
+Also declares both keys in config_definitions.json. lnms config:set validates
+every key against that file and refuses anything undeclared, and the only
+wildcard defined is alert.macros.rule.*, so the keys have to be named.
+
+NOTE: this is a LOCAL, TEMPORARY patch to two core files. daily.sh reverts
+both on update. See scripts/patch-core.sh and docs/DEPLOYMENT.md.
+---
+--- a/includes/html/graphs/generic_data.inc.php
++++ b/includes/html/graphs/generic_data.inc.php
+@@ -145,19 +145,33 @@
+ }
+ 
+ $rrd_options[] = 'COMMENT:bps      Now       Ave      Max      ' . LibrenmsConfig::get('percentile_value') . 'th %\\n';
+ 
+-$rrd_options[] = 'AREA:in' . $format . '_max#D7FFC7' . $stacked['transparency'] . ':';
+-$rrd_options[] = 'AREA:in' . $format . '#90B040' . $stacked['transparency'] . ':';
+-$rrd_options[] = 'LINE:in' . $format . '#608720:In ';
++// Port traffic series colours.
++//
++// Defaults are the values this file previously hard-coded, so an instance
++// that sets neither key renders byte-identically. Each ramp is three tones,
++// palest first: the 95th-percentile max fill, the main area fill, and the
++// outline. Matches the shape of the existing graph_colours.* palettes.
++$port_series = function (string $key, array $fallback): array {
++    $v = LibrenmsConfig::get($key);
++
++    return (is_array($v) && count($v) >= 3) ? array_values($v) : $fallback;
++};
++$port_in = $port_series('graph_colours.port_in', ['D7FFC7', '90B040', '608720']);
++$port_out = $port_series('graph_colours.port_out', ['E0E0FF', '8080C0', '606090']);
++
++$rrd_options[] = 'AREA:in' . $format . '_max#' . $port_in[0] . $stacked['transparency'] . ':';
++$rrd_options[] = 'AREA:in' . $format . '#' . $port_in[1] . $stacked['transparency'] . ':';
++$rrd_options[] = 'LINE:in' . $format . '#' . $port_in[2] . ':In ';
+ $rrd_options[] = 'GPRINT:in' . $format . ':LAST:%6.' . $float_precision . 'lf%s';
+ $rrd_options[] = 'GPRINT:in' . $format . ':AVERAGE:%6.' . $float_precision . 'lf%s';
+ $rrd_options[] = 'GPRINT:in' . $format . '_max:MAX:%6.' . $float_precision . 'lf%s';
+ $rrd_options[] = 'GPRINT:percentile_in:%6.' . $float_precision . 'lf%s\\n';
+ 
+-$rrd_options[] = 'AREA:dout' . $format . '_max#E0E0FF' . $stacked['transparency'] . ':';
+-$rrd_options[] = 'AREA:dout' . $format . '#8080C0' . $stacked['transparency'] . ':';
+-$rrd_options[] = 'LINE:dout' . $format . '#606090:Out';
++$rrd_options[] = 'AREA:dout' . $format . '_max#' . $port_out[0] . $stacked['transparency'] . ':';
++$rrd_options[] = 'AREA:dout' . $format . '#' . $port_out[1] . $stacked['transparency'] . ':';
++$rrd_options[] = 'LINE:dout' . $format . '#' . $port_out[2] . ':Out';
+ $rrd_options[] = 'GPRINT:out' . $format . ':LAST:%6.' . $float_precision . 'lf%s';
+ $rrd_options[] = 'GPRINT:out' . $format . ':AVERAGE:%6.' . $float_precision . 'lf%s';
+ $rrd_options[] = 'GPRINT:out' . $format . '_max:MAX:%6.' . $float_precision . 'lf%s';
+ $rrd_options[] = 'GPRINT:percentile_out:%6.' . $float_precision . 'lf%s\\n';
+--- a/resources/definitions/config_definitions.json
++++ b/resources/definitions/config_definitions.json
+@@ -2814,8 +2814,24 @@
+                 "401F10"
+             ],
+             "type": "array"
+         },
++        "graph_colours.port_in": {
++            "default": [
++                "D7FFC7",
++                "90B040",
++                "608720"
++            ],
++            "type": "array"
++        },
++        "graph_colours.port_out": {
++            "default": [
++                "E0E0FF",
++                "8080C0",
++                "606090"
++            ],
++            "type": "array"
++        },
+         "graph_colours.psychedelic": {
+             "default": [
+                 "CC7CCC",
+                 "D0558F",
