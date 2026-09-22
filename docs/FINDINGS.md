@@ -750,6 +750,48 @@ sets this key has to know.
   `"dark"`, so a registered custom theme renders on the **light** base and must
   re-implement the entire dark layer itself.
 
+### Verified on a live instance, not inferred
+
+The bullet above was originally read out of one Blade conditional and one JS
+function. It is correct, but the mechanism is worth stating precisely, because
+"there is no dark slot" and "the setting has only one dimension" are different
+claims and only the second is true.
+
+Tested with `webui.custom_css` cleared, so no skin could mask the behaviour:
+
+| Action | `.dark` on `<html>` | scheme file | `site_style` |
+|---|---|---|---|
+| baseline (`default`) | yes | none | `dark` |
+| select **Blue** | **removed** | `blue.css` loads | `blue` |
+| click **Dark Mode** button | restored | `blue.css` **unloads** | `dark` |
+| select **Mono** | **removed** | `mono.css` loads | `mono` |
+| click **Dark Mode** button | restored | `mono.css` **unloads** | `dark` |
+
+Two things follow, and the second is the one that matters:
+
+1. `light` and `dark` load no stylesheet at all — they are the `.dark` class
+   plus `tw_dark.css`. `blue` and `mono` are **light-base** schemes.
+2. **The Preferences dropdown and the Light / Dark / Device buttons are the
+   same setting, not two axes.** Clicking *Dark Mode* while Blue was selected
+   changed the dropdown itself to `dark`. So `light | dark | device | blue |
+   mono` are mutually exclusive values of one enum, and *"dark base plus an
+   accent"* is not expressible — not because a slot is missing, but because
+   there is only one dimension to express it in.
+
+Adding a built-in scheme is otherwise cheap: the layout loads
+`css/<name>.css` for any value that is not `light` or `dark`, so it costs one
+stylesheet and one key in the `site_style` options map. No Blade or controller
+change.
+
+> **Methodology note, recorded because it nearly became a false bug report.**
+> An earlier run appeared to show `mono.css` still loaded *with* `.dark`
+> active — which would have been a real defect. It was an artefact: that run
+> set the dropdown with `select.value = 'mono'` plus a synthetic `change`
+> event, which bypasses the handler that removes the stylesheet link. Driven
+> through the actual form control, it unloads correctly every time. Anything
+> in this table that was produced by scripting a control rather than operating
+> it should be assumed wrong until repeated the slow way.
+
 ---
 
 ## Prior art
