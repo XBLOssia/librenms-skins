@@ -50,6 +50,15 @@ LibreNMS to have a real theme system** — one where an admin can install a them
 from a file, users can pick it, and custom themes can be removed while the
 built-ins stay protected.
 
+> **Superseded, 2026-09-22.** Two maintainers said plainly that installable
+> themes are not wanted — *"LibreNMS isn't Wordpress"*, and *"I hope installable
+> themes is not the goal"*. What was offered instead: **selectable built-in
+> colour schemes, hosted in the LibreNMS codebase.** That is a narrower and
+> better target, and Phases 0–2 are unchanged by it — they are the prerequisite
+> either way. Phases 3–4 below are kept as written because the thread is public
+> and this file is the record of what was actually proposed; see the revised
+> Phase 3 note for what replaces them.
+
 I'm not asking anyone to approve that today. I'm asking whether the direction is
 welcome, because the first phases are things murrant has already asked for, and
 they're worth doing whether or not the rest ever happens.
@@ -129,7 +138,11 @@ Five places, none of which know about each other. This is the actual problem —
 not any individual value.
 
 1. **`styles.css`** — 331 hex literals.
-2. **`tw_dark.css`** — 272 hex literals, the whole dark theme.
+2. **`tw_dark.css`** — 272 hex literals. *Correction, from a maintainer: this
+   is not "the dark theme". It is legacy Bootstrap overrides kept so older
+   markup still works with the Tailwind theme toggle, and it carries a lot of
+   dead CSS from an old convention of copying all of Bootstrap to recolour it.
+   Some share of these literals wants deleting, not tokenising.*
 3. **Inline `tw:` utilities in Blade templates** — 595 uses.
 4. **JavaScript template strings.** The dashboard widget title bar is built by
    string concatenation with utilities inline and no class at all
@@ -158,6 +171,8 @@ cleanup murrant asked for. Phases 3–4 are the theme system, and they're
 comparatively small *because* of 0–2.
 
 #### Phase 0 — four small fixes, no theme system required
+
+*(Three, as of 2026-09-22 — 0b is withdrawn, see below. Heading left as posted.)*
 
 **0a. Drop the `!` from inline colour utilities.** 9 files, no visual change.
 
@@ -215,10 +230,14 @@ nothing and is invisible. Where it genuinely is needed, moving the declaration
 into a component class in `app.css` also fixes it, because `@apply` output is
 unlayered and therefore reachable.
 
-**0b. Give the dashboard widget header a class.** One line, no visual change.
-`.dashboard-widget-title` is only the inner `<span>`, so the grey bar itself is
-unreachable. Precedent: [#20294](https://github.com/librenms/librenms/pull/20294)
-added `.widget-header` to a sibling element for exactly this reason.
+**0b. ~~Give the dashboard widget header a class.~~ WITHDRAWN.** The premise
+was that `.dashboard-widget-title` is only the inner `<span>` so the bar itself
+is unreachable. It is not unreachable — the header carries
+`tw:dark:bg-dark-gray-200`, and this repo's skins theme it both by element
+selector and by redefining that theme variable. A maintainer flagged it and was
+right. What is left is a preference for a semantic class over depending on
+element position, which is not worth a maintainer's attention. See FINDINGS
+§2b.
 
 **0c. Tokenise the 58 colour literals in the shared graph helpers.** 15 files.
 Pixel-identical if defaults keep current values. These helpers are referenced by
@@ -347,6 +366,16 @@ End state: one palette definition drives the page and the graphs.
 
 #### Phase 3 — themes as data
 
+> **Superseded — see the note at the top.** What follows was the proposal as
+> posted. The replacement is much smaller: **colour schemes live in the
+> LibreNMS codebase as token sets and are selectable through the existing
+> `site_style` mechanism.** No upload, no manifest format, no third-party
+> installs, no policy gate, and nothing here for a maintainer to support when a
+> stranger's theme breaks. Phases 0–2 are what make adding one cheap; after
+> them a scheme is a file of token values and a line in a list.
+>
+> Kept below unedited as the record of what was argued.
+
 A theme becomes a **validated manifest of token values** — not a CSS file.
 
 - A `themes` table, same shape as `custom_map`.
@@ -362,6 +391,10 @@ A theme becomes a **validated manifest of token values** — not a CSS file.
   webserver user to own.
 
 #### Phase 4 — the UI
+
+> **Withdrawn.** This phase existed only to serve installable themes. With
+> built-in schemes there is nothing to upload or delete, and selection already
+> works through `site_style`. Kept below as the record.
 
 Upload and delete in the web UI, gated by a policy. Per-user selection already
 works from Phase 3. This is the smallest phase.
@@ -424,6 +457,9 @@ Not approval of the whole thing. Specifically:
    reasonable place to start building trust. I would then like to follow with
    0a, which is the one that most directly unblocks third-party theming.
 
+   *(Asked before 0b was withdrawn. The equivalent ask now is 0d — four
+   contrast values, the least arguable item in the set.)*
+
 If 0c is welcome, I'd suggest starting it with `generic_data.inc.php` on its
 own rather than all fifteen helpers at once — six lines, the pattern copied
 from a sibling file in the same directory, and it fixes `port_bits`, which is
@@ -481,14 +517,16 @@ reply. Nothing below should move until someone responds:
 
 1. Discord first, using the opener above.
 2. Post to Projects once someone's said "sure, write it up".
-3. Open **Phase 0b only** — the widget-header class. One line, trivially
-   reviewable. A merged trivial PR buys standing for the rest.
-4. Then **0a** (drop the `!`, 9 files) once 0b merges. This is the one that
-   most directly unblocks third-party theming, and it wants a reviewer who
-   already trusts you.
-5. **0d** can go any time — contextual row contrast plus the select2
-   placeholder. Pure accessibility, independent of everything else, and the
-   easiest thing in the proposal to say yes to.
+3. Open **Phase 0d only** — contextual row contrast plus the select2
+   placeholder. Four values, pure accessibility, independent of everything
+   else, and the easiest thing in the set to say yes to. It inherited the
+   opener slot when 0b was withdrawn.
+4. Then **0a** (drop the `!`, 9 files). Note this is now weaker than first
+   drafted twice over: the utilities turned out reachable via theme variables,
+   *and* third-party theming is no longer the goal. Pitch it as removing an
+   `!important` nothing depends on, not as unblocking anything.
+5. **0b is withdrawn.** The premise was wrong — the widget header is themeable.
+   Do not open it.
 6. **0c** (graph helpers, 15 files) is scoped but unwritten — see
    [ROADMAP.md](ROADMAP.md) "Ready to write". Start with
    `generic_data.inc.php` alone if a 15-file PR is too much at once: six lines,
@@ -496,10 +534,12 @@ reply. Nothing below should move until someone responds:
 7. Don't write a line of Phase 1 until question 2 gets an answer. The token
    contract is the part that's expensive to get wrong.
 
-**Letters were off by one in an earlier draft of this list** — it said "0a,
-one line" when 0a is 9 files and 0b is the one-liner. Corrected against the
-phase definitions in the post above; if you edit one, re-check the other.
+**This list has been wrong twice.** First the letters were off by one — it
+said "0a, one line" when 0a is 9 files. Then 0b, which it named as the opener,
+turned out to rest on a false premise and was withdrawn. If you edit the phase
+definitions above, re-check this list; it does not update itself.
 
-If **0b** — the one-line one — is rejected, stop and ask why before writing
-anything else. A no on the most trivially correct change in the set is an
-answer about the direction, not about the patch.
+If **0d** — four contrast values in the stock dark theme, nothing to do with
+theming — is rejected, stop and ask why before writing anything else. A no on
+the most trivially correct change in the set is an answer about the direction,
+not about the patch.

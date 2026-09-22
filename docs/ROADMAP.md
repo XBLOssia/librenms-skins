@@ -65,8 +65,10 @@ Zerg, Protoss and Terran have all run on a live production instance — LibreNMS
 Walking real pages is what produced everything in the Completed section below,
 and it found things the harness structurally could not:
 
-- **Dashboard widget title bars** had no class at all — the colour lives in a
-  JavaScript template string, so no stylesheet-based audit could see it.
+- **Dashboard widget title bars** — found because no stylesheet-based audit
+  could see them: the class list is assembled in a JavaScript template string.
+  Note the original write-up over-claimed this as *unthemeable*; it is not, and
+  that claim is retracted in FINDINGS §2b.
 - **Scrollbars**, which upstream never styles, so every scrollable widget
   showed bright browser chrome.
 - **Alert-rule row contrast**, which turned out to be an upstream bug rather
@@ -182,12 +184,13 @@ Drafted — see [PROPOSAL.md](PROPOSAL.md). Scoped to a phased
 select it, custom themes are deletable and built-ins protected. Five phases,
 each independently shippable:
 
-- **0** — four small fixes (drop the `!` from 22 inline colour utilities,
-  widget header class, tokenise the 58 graph-helper literals, contextual row
-  contrast). No theme system required. **0a is weaker than first drafted** —
-  those utilities turned out to be reachable via the prefixed theme variables,
-  so the argument is now "requires two undocumented Tailwind facts", not
-  "impossible". 0c gained a user-visible symptom and a scoped patch.
+- **0** — **three** small fixes, no theme system required: drop the `!` from
+  22 inline colour utilities (0a), tokenise the 58 graph-helper literals (0c),
+  fix contextual row contrast (0d). *0b — the widget header class — is
+  withdrawn; its premise was wrong.* 0a is also weaker than first drafted: the
+  utilities are reachable via the prefixed theme variables, so the argument is
+  "requires two undocumented Tailwind facts", not "impossible". **0c is the
+  strongest of the three** and has a scoped patch already written.
 - **1** — define the token contract from the 603 literals in `styles.css` +
   `tw_dark.css`. Pixel-identical. This list *is* the theming API.
 - **2** — one palette source for both CSS and graphs.

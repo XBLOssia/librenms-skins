@@ -175,6 +175,14 @@ debug. Details, sizes, licensing and how to swap a face:
 
 ## Why these are "skins" and not themes
 
+**And why they will stay skins.** When this was proposed upstream, two
+maintainers said installable themes are not wanted — *"LibreNMS isn't
+Wordpress"* — and offered the alternative of **selectable built-in colour
+schemes hosted in the LibreNMS codebase**
+([thread](https://community.librenms.org/t/a-theme-system-for-librenms-a-phased-proposal/29463)). So there is no third-party theme format coming, by choice
+rather than by omission, and the upstream path for these three is to become
+built-ins rather than to be installed.
+
 LibreNMS has no theme installation system. There is no packaging format, no
 distribution story, and no way to register a new theme without patching a core
 file that updates overwrite. The two available hooks are:
@@ -192,8 +200,8 @@ Building these surfaced concrete, measurable problems with theming LibreNMS as
 it stands. They are written up in **[docs/FINDINGS.md](docs/FINDINGS.md)** with
 reproducible numbers — that document, not the skins, is the interesting output
 of this project. **[docs/PROPOSAL.md](docs/PROPOSAL.md)** turns it into a
-phased upstream proposal — four small fixes that need no theme system, then the
-token work, then a theme system built on it — ready to post.
+phased upstream proposal — three small fixes that need no theme system, then
+the token work, then built-in colour schemes on top of it.
 
 ---
 

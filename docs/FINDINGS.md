@@ -31,15 +31,40 @@ of this document is to supply the numbers.
    a two-value boolean. Graph *chrome* is configurable and themes cleanly; the
    *data series* often do not, because **5 shared helpers hard-code 40 hex
    literals and read no config at all** — and 169 graph files delegate to them.
-5. Some colour **is not in a stylesheet at all** — the dashboard widget title
-   bar is built in a JavaScript string with inline utilities and no class, so
-   no stylesheet audit can find it.
+5. ~~Some colour is not in a stylesheet at all.~~ **Retracted** — the widget
+   title bar *is* themeable, and always was. What is true is narrower and only
+   about auditing: its class list lives in a JavaScript string, so a
+   stylesheet-reading audit cannot see the element. See §2b.
 6. The stock dark theme has its **own contrast bug**: saturated row fills under
    dark text on the alert rules page. Any theme inherits it.
 7. There is no theme packaging, distribution, or per-user selection mechanism.
 8. **None of this applies to typography.** A full two-face typographic treatment
    needed zero workarounds, because core barely specifies `font-family`. The
    obstacle is not theming — it is 264 hard-coded color literals.
+
+---
+
+## Corrections ledger
+
+Every claim in this document that has since been shown wrong, kept in one place
+so a reader can see what to distrust without reading all of it. Several were
+caught by our own later work rather than by review, which is the point: a
+measurement is only as good as the last time anyone checked it.
+
+| Claim | Status | How it broke |
+|---|---|---|
+| "468 distinct first-party colours" | **corrected → 264** | The count included `html/js/`, which this document itself calls vendored. Caught by writing the reproduction command. |
+| "149 graph files hard-code hex" | **corrected → 58 literals in 15 helpers** | The files mostly delegate to shared helpers; the literals live in the helpers. |
+| Coverage "100%" | **corrected → 83%** | Revised down twice. First the denominator omitted 123 `styles.css` classes; then substring matching over-counted. |
+| §2: inline `tw:…!` utilities are "unreachable from `custom_css` by any means" | **retracted** | The test redefined `--color-red-500`; LibreNMS prefixes its theme variables, so the name is `--tw-color-red-500`. A typo read as a property of the cascade. |
+| §2b: the widget header colour "is not in a stylesheet at all" | **retracted** | It is themeable, via the element selector or the theme variable — which §16 of every skin here now does. Flagged by a LibreNMS maintainer; our own later work had already disproved it. |
+| `tw_dark.css` is "the whole dark theme" | **corrected** | Per a maintainer: legacy Bootstrap overrides kept for the Tailwind theme toggle, carrying a lot of dead CSS. Some of its 272 literals want deleting, not tokenising. |
+
+**The pattern worth naming:** four of these six were true when written and
+falsified later — three of them by work in this same repo. Nothing here
+re-checks a finding once it is written down, so corrections only happen when
+something forces them. If you are reading this document to decide whether to
+act on it, weight the reproduction commands over the prose.
 
 ---
 
@@ -312,9 +337,21 @@ than replacing them.
 
 ---
 
-## 2b. Some colour is not in a stylesheet at all
+## 2b. A stylesheet audit cannot see the widget header *(claim corrected)*
 
-The grey bar above every dashboard widget has **no semantic class**. It is
+**This section originally argued the widget header was unreachable. That was
+wrong.** It is reachable, it was always reachable, and this repo's own skins
+have been theming it successfully for most of the project's life. Corrected
+after a LibreNMS maintainer pointed it out
+([thread](https://community.librenms.org/t/a-theme-system-for-librenms-a-phased-proposal/29463)); the honest response is that our own later work had already
+disproved it and we did not propagate the correction.
+
+What survives is a real but much narrower observation about **auditing**, not
+about theming. Read it as that.
+
+---
+
+The grey bar above every dashboard widget has no *semantic* class. It is
 emitted by JavaScript string concatenation inside a Blade file
 (`resources/views/overview/default.blade.php:516`):
 
@@ -324,15 +361,37 @@ emitted by JavaScript string concatenation inside a Blade file
 '<span class="dashboard-widget-title">' + data.title + '</span>'
 ```
 
-`.dashboard-widget-title` — the one named hook — is only the inner `<span>`.
-Styling it leaves the bar grey. The only handle a theme has is the element
-itself: `html.dark .grid-stack-item-content > header`.
+`.dashboard-widget-title` — the one named hook — is only the inner `<span>`,
+so styling *that* leaves the bar grey. But look at the string above: the header
+carries `tw:dark:bg-dark-gray-200`, and that utility reads
+`var(--tw-color-dark-gray-200)`. **Two independent handles exist:**
 
-This matters beyond one widget. **Any audit based on reading stylesheets cannot
-find this**, because the colour does not live in a stylesheet — it lives in a
-string in a template, assembled at runtime. `scripts/coverage.sh` in this repo
-reported 100% coverage while the most prominent element on the landing page was
-still stock grey.
+- the element itself, `html.dark .grid-stack-item-content > header`
+- redefining `--tw-color-dark-gray-200`, which §2 establishes works and which
+  section 16 of every skin in this repo now does
+
+The maintainer's phrasing was *"it doesn't matter at all as the theme is
+covered by the parent html css"*, and that is correct. The original
+conclusion here — that the bar needed a new class before it could be themed —
+does not follow and should never have been drawn.
+
+**How the error survived:** this section was written early, when the skins
+styled the bar via the element selector and the utility mechanism had not been
+found yet. Section 16 later proved the theme-variable route, which falsifies
+this section, and nobody came back to reconcile it. That is the same failure
+mode as the retraction in §2 — a finding that was true when written, falsified
+by our own later work, left standing because nothing re-checks old claims.
+
+What *is* worth keeping: **an audit based on reading stylesheets cannot find
+this element**, because its class list is assembled at runtime from a string in
+a template. `scripts/coverage.sh` in this repo reported 100% coverage while the
+most prominent element on the landing page was still stock grey — not because
+the element was unthemeable, but because the tool had no way to know it existed.
+
+That is an argument about tooling, and it generalises: coverage counts
+selectors answered, and cannot count selectors it never sees. It is not an
+argument about LibreNMS's theming surface, which is what this section
+originally tried to make it.
 
 The fix upstream is trivial and already has precedent: give it a class.
 [PR #20294](https://github.com/librenms/librenms/pull/20294) did exactly that
@@ -743,7 +802,14 @@ pixel-identical, which is what makes them reviewable.
    symbolic value.
 5. **Drop the remaining `!` modifiers** from `@apply` in component classes, once nothing
    depends on them. This alone would let skins stop using `!important`.
-6. **Fold `tw_dark.css`'s 272 literals into the `@theme` block**, area by area,
+6. **Triage `tw_dark.css`'s 272 literals, then fold the survivors into the
+   `@theme` block**, area by area. Per a maintainer, this file is not "the dark
+   theme" but legacy Bootstrap overrides kept so the old markup works with the
+   Tailwind theme toggle — and it is bloated because a previous convention had
+   themes copy the entire Bootstrap stylesheet and recolour it. So an unknown
+   share of those 272 literals should be **deleted rather than tokenised**.
+   This repo found the same thing from the other end: ~31 colour-bearing
+   classes with zero references in `resources/views`, mostly Observium-era.
    each PR pixel-identical.
 7. **Normalise `tw_dark.css` to a consistent selector depth.** Today it mixes
    `.dark .x` and `.dark .y .x`, which is what makes overriding it require
