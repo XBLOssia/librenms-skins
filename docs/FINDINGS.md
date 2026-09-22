@@ -58,6 +58,7 @@ measurement is only as good as the last time anyone checked it.
 | Coverage "100%" | **corrected → 83%** | Revised down twice. First the denominator omitted 123 `styles.css` classes; then substring matching over-counted. |
 | §2: inline `tw:…!` utilities are "unreachable from `custom_css` by any means" | **retracted** | The test redefined `--color-red-500`; LibreNMS prefixes its theme variables, so the name is `--tw-color-red-500`. A typo read as a property of the cascade. |
 | §2b: the widget header colour "is not in a stylesheet at all" | **retracted** | It is themeable, via the element selector or the theme variable — which §16 of every skin here now does. Flagged by a LibreNMS maintainer; our own later work had already disproved it. |
+| "1,322 graph definitions" | **corrected → 1,233** | The figure summed per-helper reference counts, which double-counts any file using more than one helper. Caught while fact-checking a forum reply. |
 | `tw_dark.css` is "the whole dark theme" | **corrected** | Per a maintainer: legacy Bootstrap overrides kept for the Tailwind theme toggle, carrying a lot of dead CSS. Some of its 272 literals want deleting, not tokenising. |
 
 **The pattern worth naming:** four of these six were true when written and
@@ -706,7 +707,16 @@ the literals live in the helpers.
 | **`generic_data.inc.php`** | **18** | **20** (incl. `port_bits`) |
 | `generic_multi_bits_separated.inc.php` | 1 | 9 |
 | …5 more | 20 | 12 |
-| **Total** | **58 across 15 files** | **1,322** |
+| **Total** | **58 across 15 files** | **1,322 refs / 1,233 files** |
+
+**Read that last figure carefully.** 1,322 is the sum of the per-helper counts,
+and it double-counts: `device/bits.inc.php` alone references three helpers, so
+it appears three times. The number of *distinct* graph definitions touching any
+`generic_*` helper is **1,233**:
+
+```bash
+grep -rlE 'generic_[a-z_]+\.inc\.php' includes/html/graphs/ --include='*.php'   | grep -vE '/generic_[a-z_]+\.inc\.php$' | wc -l
+```
 
 **Tokenising 58 literals in 15 files would make essentially every graph in
 LibreNMS theme-aware.** That is an afternoon's mechanical work, not a migration
@@ -834,7 +844,7 @@ pixel-identical, which is what makes them reviewable.
    second is an accessibility fix that stands on its own.
 3. **Tokenise the 58 hex literals in the 15 shared `generic_*` graph helpers**
    (§5). This is the best effort-to-impact ratio available: 15 files, one
-   afternoon, and 1,322 graph references become theme-aware. Start with
+   afternoon, and 1,233 graph definitions become theme-aware. Start with
    `generic_data.inc.php` — 18 literals, and it renders the port traffic graph
    on every dashboard. The same pass should retire the inline
    `session('applied_site_style') == 'dark' ? '#x' : '#y'` ternaries so graphs

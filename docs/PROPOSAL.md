@@ -241,8 +241,9 @@ element position, which is not worth a maintainer's attention. See FINDINGS
 
 **0c. Tokenise the 58 colour literals in the shared graph helpers.** 15 files.
 Pixel-identical if defaults keep current values. These helpers are referenced by
-1,322 graph definitions, so this is the best effort-to-impact ratio in the whole
-proposal.
+**1,233 graph definitions** (1,322 references — the per-helper counts sum
+higher because a file can use more than one helper), so this is the best
+effort-to-impact ratio in the whole proposal.
 
 | Helper | Literals | References |
 |---|---|---|
@@ -252,7 +253,7 @@ proposal.
 | `generic_duplex.inc.php` | 7 | 28 |
 | **`generic_data.inc.php`** | **18** | **20** (incl. `port_bits`) |
 | …10 more | 26 | 205 |
-| **Total** | **58 across 15 files** | **1,322** |
+| **Total** | **58 across 15 files** | **1,322 refs / 1,233 distinct files** |
 
 Ten of the fifteen already read `graph_colours`. **Five read no config at
 all** — `generic_data`, `generic_duplex`, `generic_simplex`,
