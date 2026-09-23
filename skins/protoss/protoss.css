@@ -1660,10 +1660,17 @@ html.dark {
  * range field on every graph page carries `tw:dark:bg-white!`, a white input
  * in dark mode. */
 @layer utilities {
+  /* MUST set colour as well as background. These elements carry a text colour
+   * chosen to sit on WHITE - graphs/show.blade.php:53 pairs tw:dark:bg-white!
+   * with tw:dark:text-gray-800. Repainting the background dark and leaving the
+   * text alone gives 1.19:1, which is worse than the white box we replaced.
+   * An earlier revision of this section did set colour; a later rewrite
+   * dropped it and reintroduced exactly that bug. Do not separate them. */
   html.dark .tw\:dark\:bg-white\!,
   html.dark .tw\:bg-white\!,
   html.dark .tw\:bg-gray-100\! {
     background-color: var(--pr-panel) !important;
+    color: var(--pr-text) !important;
   }
   html.dark .tw\:hover\:bg-gray-200\!:hover,
   html.dark .tw\:dark\:hover\:bg-gray-200\!:hover {
