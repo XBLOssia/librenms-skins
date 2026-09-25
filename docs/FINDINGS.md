@@ -61,12 +61,13 @@ measurement is only as good as the last time anyone checked it.
 | "1,322 graph definitions" | **corrected → 1,233** | The figure summed per-helper reference counts, which double-counts any file using more than one helper. Caught while fact-checking a forum reply. |
 | `tw_dark.css` is "the whole dark theme" | **corrected** | Per a maintainer: legacy Bootstrap overrides kept for the Tailwind theme toggle, carrying a lot of dead CSS. Some of its 272 literals want deleting, not tokenising. |
 | "What would actually help" §4: tokenise the `.lnms-btn-*` component classes | **corrected** | A maintainer rejects the pattern itself, not just its hard-coded hex: "I do not like lnms-btn-danger so no, just swapping one set of class names for another is probably not the winning strategy." Tokenising a pattern upstream wants retired is the wrong investment. |
+| §2c: the select2 placeholder is a second stock dark-theme bug at 1.2:1 | **retracted** | Measured with a skin active. Stock dark leaves the field white, where core's ink reads 14.24:1; the skins' own field darkening caused the failure. Caught while preparing it as an upstream PR, by measuring with the skin disabled for the first time. Also claimed in the posted forum proposal. |
 
-**The pattern worth naming:** eight entries, and most were wrong the moment
+**The pattern worth naming:** nine entries, and most were wrong the moment
 they were written — miscounts, a variable-name typo, a test that did not do
 what it appeared to. They survived because nothing here re-checks a finding
 once it is written down, so a correction only happens when something forces
-one: five were forced by later work in this same repo, three by outside
+one: six were forced by later work in this same repo, three by outside
 review. If you are reading this document to decide whether to act on it,
 weight the reproduction commands over the prose.
 
@@ -506,7 +507,7 @@ mid-tones:
 | `tr.warning` | `#ba6f05` |
 | `tr.danger` | `#ee5f5b` |
 
-and leaves the text colour alone, so dark body text sits on bright fills. On
+and leaves the text colour alone, so light body text sits on bright fills. On
 the **alert rules page**, where most rows carry one of these classes, this is
 the worst contrast in the application — and it is that way in the stock dark
 theme, with no custom CSS involved.
@@ -573,35 +574,54 @@ removed at runtime by inline jQuery in `includes/html/print-alert-rules.php`.
 That last one is invisible to a grep for `class=`, and converting the markup
 without it would leave rows holding a stale class after a toggle.
 
-### A second instance: the select2 placeholder
+### Retracted: "a second instance", the select2 placeholder
 
-`tw_dark.css` also ships:
+This section used to claim a second stock dark-theme bug: that `tw_dark.css`
+ships
 
 ```css
 .dark .select2-container--bootstrap .select2-selection--single
   .select2-selection__placeholder { color: #272b30; }
 ```
 
-`#272b30` is not a text colour. It is `--tw-color-dark-gray-500`, the **darkest
-surface** in core's own dark ramp, used here as `color`. The result on
-`/eventlog` is a filter whose "All Devices" and "All Types" labels measure
-**1.2:1** against the field behind them — effectively invisible, in the stock
-dark theme, with no custom CSS involved.
+and that `#272b30` — the darkest surface in core's dark ramp — used as ink made
+the `/eventlog` filter labels measure **1.2:1**, "in the stock dark theme, with
+no custom CSS involved."
 
-Measured on a live instance:
+The last clause was false. Measured again on 2026-09-25 with the skin's
+`<link>` disabled in-page, stock dark leaves the select2 field **white**
+(`.select2-selection` keeps select2-bootstrap's `#fff`; `tw_dark.css` never
+restyles it). Core's dark ink on that white field reads at **14.24:1**:
 
-```js
-const el = document.querySelector('.select2-selection__placeholder');
-getComputedStyle(el).color            // rgb(39, 43, 48)  == #272b30
-```
+| | field | placeholder | ratio |
+|---|---|---|---|
+| stock dark | `#ffffff` | `#272b30` | 14.24:1 |
+| with a skin | skin surface | `#272b30` | 1.2:1 |
 
-Both of these are the same underlying mistake — a **surface** value used as an
-**ink** value — which is the thing a real token contract would make hard to get
-wrong. That is the argument for section "What would actually help", made by
-core's own stylesheet rather than by me.
+The failure is an interaction the **skins** create: section 6 of each skin
+darkens the field, and core's ink — correct for the field core actually
+renders — is left behind on it. Section 15 of each skin fixes the result, and
+was labelled "UPSTREAM CONTRAST BUG" with a comment asserting stock had the bug
+too. Both are corrected.
 
-Worth fixing upstream independently of any theming work. A theme can only paper
-over it, which is what this repo's skins now do (section 15 of each skin).
+**How it broke.** The original measurement was taken on the live instance with
+a skin active, and attributed to core. Nothing in the reading distinguished
+the two, because the skin was the thing supplying the background. It was
+caught while preparing it as an upstream PR — the first time anyone looked at
+the stock page. **Before calling anything an upstream bug, measure with the
+skin disabled.**
+
+The paragraph that followed argued both §2c bugs were "the same underlying
+mistake — a **surface** value used as an **ink** value", and offered that as
+core's own evidence for a token contract. With no second instance, that
+argument has nothing left under it: the contextual-row bug is saturated fills
+under light text, not a surface used as ink. It is withdrawn too.
+
+The same audit did find one real stock defect of this kind, and it survives
+the stock-mode re-measure: `.device-link-down` in `app.css` uses
+`tw:dark:text-red-500!` (`#fb2c36`), which reads at **3.35:1** on a device-table
+row and **3.01:1** on an alternate row. Tailwind's `red-400` (`#ff6467`) still
+fails at 4.42:1 / 3.97:1; `red-300` (`#ffa2a2`) passes at 6.64:1 / 5.97:1.
 
 ---
 

@@ -1477,18 +1477,20 @@ html.dark .btn:not(.fa):not([class*="fa-"]) {
 
 
 /* -----------------------------------------------------------------------------
- * 15. UPSTREAM CONTRAST BUG: the select2 placeholder
+ * 15. select2 placeholder ink, broken by this skin's own field colour
  *
  * tw_dark.css ships:
  *
  *   .dark .select2-container--bootstrap .select2-selection--single
  *     .select2-selection__placeholder { color: #272b30 }
  *
- * #272b30 is an input BACKGROUND from the Darkly bootswatch being used as a
- * TEXT colour. It renders near-black on near-black and measures 1.2:1 - the
- * "All Devices" and "All Types" filters on /eventlog are effectively invisible.
- * Stock LibreNMS dark has this bug too; it is not one the skin introduced.
- * This is the second instance of the same class of bug - see section 2c.
+ * That is legible in core: stock dark leaves the select2 field WHITE, and
+ * #272b30 on white measures 14.2:1. Section 6 of this skin darkens the field,
+ * and that is what drops core's dark ink to 1.2:1 - the "All Devices" and
+ * "All Types" filters on /eventlog. The skin introduced this; it is NOT an
+ * upstream bug. An earlier version of this comment claimed otherwise, from a
+ * measurement taken with the skin active. If section 6 ever stops darkening
+ * the field, this section can go.
  *
  * Upstream's selector is (0,4,0), so the whole chain has to be mirrored.
  * The --multiple placeholder and the clear affordance are stock greys that

@@ -339,6 +339,11 @@ value used as ink. A token contract that separates the two makes it hard to
 write, which is the argument for Phase 1 made by core's own stylesheet rather
 than by me.
 
+*(Retracted 2026-09-25, after posting. The 1.2:1 was measured with a skin
+active. Stock dark leaves the select2 field white, where `#272b30` reads at
+14.2:1; the skin's own field darkening caused the failure. The "same mistake"
+argument above therefore has no second instance. Section left as posted.)*
+
 Worth fixing regardless of everything else here.
 
 #### Phase 1 — define the token contract
@@ -519,7 +524,8 @@ reply. Nothing below should move until someone responds:
 1. Discord first, using the opener above.
 2. Post to Projects once someone's said "sure, write it up".
 3. Open **Phase 0d only** — contextual row contrast plus the select2
-   placeholder. Four values, pure accessibility, independent of everything
+   placeholder. *(The select2 half is void — not a stock bug; see FINDINGS
+   §2c. Contextual rows went up alone as #20594.)* Four values, pure accessibility, independent of everything
    else, and the easiest thing in the set to say yes to. It inherited the
    opener slot when 0b was withdrawn.
 4. Then **0a** (drop the `!`, 9 files). Note this is now weaker than first

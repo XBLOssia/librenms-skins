@@ -258,9 +258,11 @@ actually computed.
 
 That is what found the dashboard widget header (its colour lives in a
 JavaScript string), the vendored Leaflet cluster markers, 77 icon buttons whose
-glyphs the skin had broken, five contrast failures the skins introduced
-themselves, and two that core ships — the `/eventlog` filter placeholder at
-1.2:1 and the down-device links at 3.3:1. A stylesheet-based check saw none of
+glyphs the skin had broken, six contrast failures the skins introduced
+themselves, and one that core ships — the down-device links, at 3.35:1 on a
+table row and 3.01:1 on an alternate row. (A seventh, the `/eventlog` filter
+placeholder at 1.2:1, was first listed as core's; it is the skins', and
+FINDINGS §2c records the retraction.) A stylesheet-based check saw none of
 them.
 
 The harness reproduces LibreNMS's real DOM and loads the real stylesheets in

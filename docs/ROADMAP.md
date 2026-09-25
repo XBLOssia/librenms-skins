@@ -73,9 +73,10 @@ and it found things the harness structurally could not:
   showed bright browser chrome.
 - **Alert-rule row contrast**, which turned out to be an upstream bug rather
   than a gap in the skins.
-- **The `/eventlog` filter placeholders**, at 1.2:1 — a second upstream bug,
-  and the same mistake as the first: a *surface* value used as *ink*
-  (`#272b30` is `dark-gray-500`).
+- **The `/eventlog` filter placeholders**, at 1.2:1 — first recorded here as
+  a second upstream bug. **Retracted:** stock dark leaves the select2 field
+  white, where core's `#272b30` ink reads at 14.2:1. The skins' own field
+  darkening caused the failure (FINDINGS §2c).
 - **Inline `tw:` utilities**, which `coverage.sh` cannot see at all because
   they are in neither denominator. Chasing these overturned the central claim
   of FINDINGS §2 — they are reachable after all, via the prefixed theme
@@ -134,8 +135,11 @@ Run it on at least `/`, `/devices`, `/alert-rules`, `/eventlog`, `/graphs` and
 a device graph page. All three skins return zero findings on all six.
 
 `/eventlog` earns its place on that list: it is the only one that exercises a
-select2 placeholder, which is where a 1.2:1 upstream bug had been sitting
-unnoticed through every previous audit round.
+select2 placeholder, which is where the skins' own field darkening turns
+core's dark placeholder ink into 1.2:1. It sat unnoticed through every
+previous audit round — and was then misattributed to core, because it was
+only ever measured with a skin active. **Measure stock with the skin link
+disabled before calling anything an upstream bug.**
 
 `/graphs` earns its place the same way, and later. It is the only page that
 pairs `tw:dark:bg-white!` with a dark `tw:dark:text-gray-800`
