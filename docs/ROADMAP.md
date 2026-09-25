@@ -174,8 +174,18 @@ weak regression net on its own. Worth adding:
    icon-on-a-button (`<button class="btn fa fa-x">`) — the two shapes that
    caused the most rework
 6. An inline `tw:`-utility fixture, including a `tw:dark:bg-white!` and a
-   `tw:dark:text-red-500!`. These are invisible to `coverage.sh` by
-   construction and were the source of the last round of live-only bugs
+   `tw:dark:text-red-500!` — and a **bare** `tw:bg-white` with no `dark:`
+   companion, which is a separate bug class the `!`-matching rules miss.
+   These are invisible to `coverage.sh` by construction and were the source
+   of the last round of live-only bugs
+7. The graph-page date-range picker, **in both states**. Its date and time
+   inputs carry bare `tw:bg-white` inside a `display:none` panel, so they are
+   invisible to `coverage.sh` and to `audit.js` alike until the picker is
+   opened — four white 319x29 boxes that survived three consecutive clean
+   audit runs on `/graphs`. The fixture needs the collapsed container and a
+   toggle, not just the open markup: the state worth testing is the one where
+   a skin looks clean and is not. Any other collapsed component would serve
+   the same purpose; this is simply the one that caught us
 
 A `?compare` mode rendering all three skins side by side would make drift
 obvious at a glance.
