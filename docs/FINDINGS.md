@@ -36,7 +36,7 @@ of this document is to supply the numbers.
    about auditing: its class list lives in a JavaScript string, so a
    stylesheet-reading audit cannot see the element. See §2b.
 6. The stock dark theme has its **own contrast bug**: saturated row fills under
-   dark text on the alert rules page. Any theme inherits it.
+   light text on the alert rules page. Any theme inherits it.
 7. There is no theme packaging, distribution, or per-user selection mechanism.
 8. **None of this applies to typography.** A full two-face typographic treatment
    needed zero workarounds, because core barely specifies `font-family`. The
@@ -62,12 +62,15 @@ measurement is only as good as the last time anyone checked it.
 | `tw_dark.css` is "the whole dark theme" | **corrected** | Per a maintainer: legacy Bootstrap overrides kept for the Tailwind theme toggle, carrying a lot of dead CSS. Some of its 272 literals want deleting, not tokenising. |
 | "What would actually help" §4: tokenise the `.lnms-btn-*` component classes | **corrected** | A maintainer rejects the pattern itself, not just its hard-coded hex: "I do not like lnms-btn-danger so no, just swapping one set of class names for another is probably not the winning strategy." Tokenising a pattern upstream wants retired is the wrong investment. |
 | §2c: the select2 placeholder is a second stock dark-theme bug at 1.2:1 | **retracted** | Measured with a skin active. Stock dark leaves the field white, where core's ink reads 14.24:1; the skins' own field darkening caused the failure. Caught while preparing it as an upstream PR, by measuring with the skin disabled for the first time. Also claimed in the posted forum proposal. |
+| §2b: PR #20294 is precedent - it "did exactly that for a different element" | **corrected** | It was closed unmerged, and it was the same element. The blocker was adding rules to `tw_dark.css` ("will be deleted in the future") and a disputed design, not the markup. |
+| §2c: `.active` is a near-miss - "five of six pass", links short by 0.08 | **corrected** | The table measured three inks. A real disabled-rule row also has `.text-muted` at 2.06:1. |
+| §2c re-verification: "neither page's table is `.table-hover`" | **corrected**, same day | Only `/poller` was checked. `/alert-rules` is `.table-hover`; hover then observed at 4.60:1. |
 
-**The pattern worth naming:** nine entries, and most were wrong the moment
+**The pattern worth naming:** twelve entries, and most were wrong the moment
 they were written — miscounts, a variable-name typo, a test that did not do
 what it appeared to. They survived because nothing here re-checks a finding
 once it is written down, so a correction only happens when something forces
-one: six were forced by later work in this same repo, three by outside
+one: nine were forced by later work in this same repo, three by outside
 review. If you are reading this document to decide whether to act on it,
 weight the reproduction commands over the prose.
 
@@ -345,8 +348,12 @@ produced a false finding earlier in this project.
 Verifying the above turned up a second instance the audit could not see.
 `components/date-range-picker.blade.php` gives its date and time inputs
 `tw:bg-white` — **no `!`, and no `dark:` companion** — so core never darkens
-them and the skins' `!`-matching rules never caught them. Four white 319x29
-inputs on a dark panel, in all three skins.
+them and the skins' `!`-matching rules never caught them. Four white inputs
+(319x29 at one pane width, 397x29 at another) on a dark panel, in all three
+skins. In stock dark they are white too, but **legible** - `#2e3338` on white,
+12.75:1 - so upstream this is a cosmetic dark-mode inconsistency, not an
+accessibility bug. The same holds for the forced-white date-range field
+(`tw:dark:bg-white!`): white in stock dark, `#1e2939` text at 14.67:1.
 
 `audit.js` missed it because the picker panel is `display:none` until opened,
 so the inputs measure 0x0 and fall under the `width < 4 || height < 4` skip.
@@ -411,7 +418,8 @@ grep -rhoE 'tw:dark:(text-dark-white|bg-dark-gray|border-dark-gray)-[0-9]+'   --
 This is the mechanism behind
 [PR #20294](https://github.com/librenms/librenms/pull/20294), where the mono
 theme's widget headers were *"silently overridden by hard-coded Tailwind
-utilities."* Same root cause, different symptom.
+utilities."* Same root cause, different symptom. (That PR was closed without
+merging - see section 2b.)
 
 ### Hard-coded hex inside the component layer
 
@@ -487,10 +495,23 @@ selectors answered, and cannot count selectors it never sees. It is not an
 argument about LibreNMS's theming surface, which is what this section
 originally tried to make it.
 
-The fix upstream is trivial and already has precedent: give it a class.
-[PR #20294](https://github.com/librenms/librenms/pull/20294) did exactly that
-for a different element, adding `.widget-header` so the mono theme could reach
-it. The same treatment here would cost one line.
+~~The fix upstream is trivial and already has precedent: give it a class.~~
+**Corrected.** This said [PR #20294](https://github.com/librenms/librenms/pull/20294)
+"did exactly that for a different element". It did not land, and it was the
+same element. #20294 replaced the dashboard widget header's hard-coded
+utilities with a `.widget-header` class, then added matching rules to
+`styles.css`, `tw_dark.css`, `blue.css` and `mono.css`. It was **closed
+unmerged** on 2026-09-21. The two reviews are the useful part:
+
+- murrant, on the `tw_dark.css` additions: *"you were supposed to remove these.
+  :D - tw_dark.css will be deleted in the future."*
+- laf, on the header's look in the mono theme: *"it was intentional, I find the
+  black banner awful imho."*
+
+So the obstacle was never the one line of markup. It was adding rules to a file
+slated for deletion, and a design the maintainers do not agree on. Two
+`.widget-header` rules survive in master's `styles.css` with nothing emitting
+the class - the live dashboard has zero such elements - so they are dead CSS.
 
 ---
 
@@ -515,17 +536,22 @@ theme, with no custom CSS involved.
 There is a fifth state, `tr.active`, used for disabled alert rules and swapped
 in and out at runtime by the toggle script on that page. It is a grey rather
 than a saturated mid-tone, so it was never part of this defect, but it is worth
-recording that it is not clean either:
+recording that it is not clean either. Measured on a real disabled rule, stock
+dark, skin off:
 
 | Text | `.active` `#49515a` | `.active:hover` `#3e444c` |
 |---|---|---|
 | body `#c8c8c8` | 4.81:1 | 5.88:1 |
 | link `#bfc0c0` | **4.42:1** | 5.39:1 |
 | white `#ffffff` | 8.05:1 | 9.83:1 |
+| muted `#7a8288` | **2.06:1** | 2.45:1 |
 
-Five of six pass. Links on the base fill miss AA by 0.08 — a rounding-error
-failure next to the 1.00:1 and 1.15:1 values in the four rows above, and not
-worth widening a PR for. Recorded here so it does not have to be re-derived.
+An earlier version of this table stopped at three inks, called it "five of six
+pass", and described the only miss as a rounding error. The real row also
+carries `.text-muted`, which fails at **2.06:1** - well below AA, and the worst
+text on the row. Links missing by 0.08 is still a near-miss; the muted text is
+not. It remains outside #20594's scope (a grey, not a saturated fill), but it
+is a real stock failure. The hover figures are computed.
 
 ### Re-verified in stock, skin disabled *(2026-09-25)*
 
@@ -544,13 +570,19 @@ row was cloned into all four states; `/poller` was measured on its six real
 | danger | 3.27 → 10.08 | 1.79 → 5.53 | 1.29 |
 
 Stock cell text is `#ffffff` and links `#bfc0c0`, as the PR assumed. The PR
-image's pixels reproduce the same fills and ratios exactly. Hover, computed from
-the hover fills against those inks, bottoms out at 4.60:1 after the change;
-neither page's table is `.table-hover` on this instance, so it is not observed.
+image's pixels reproduce the same fills and ratios exactly.
+
+Hover **observed**, with a real mouse over a danger row on `/alert-rules`
+(which is `.table-hover`; `/poller` is not): shipped `#ec4844` gives links
+2.06:1 and text 3.77:1; the PR's `#9b1410` gives **4.60:1** and 8.40:1. That is
+the worst state, and it matches the computed figures. An earlier version of this
+paragraph said neither page's table was `.table-hover` - only `/poller` had
+been checked.
 
 One figure is arithmetic rather than observation: `.text-muted` (`#7a8288`)
-goes from 1.00:1 (warning) to about 2.58:1. The numbers are right, but no
-contextual row on either page contains muted text, so no user currently sees it.
+goes from 1.00:1 (warning) to about 2.58:1. The numbers are right, but none of
+the four coloured rows on either page contains muted text, so no user currently
+sees it. (The grey `.active` state does - see its table above.)
 
 ### What upstream will and will not take *(outcome, three review rounds)*
 
@@ -583,6 +615,11 @@ inside a loop, so there is no settled answer for this case yet.
 The original eight-value change was then accepted as a quick fix, with the
 reviewer noting it had been held to a higher standard because the forum post
 had signalled a larger theming project behind it.
+
+Earlier, on an unrelated PR (#20294, section 2b), the same reviewer was blunter
+about the file's future: *"tw_dark.css will be deleted in the future."* Read
+together with "only remove things from tw_dark.css", the direction is
+unambiguous: anything added there is work he intends to throw away.
 
 **The transferable lesson:** a small accessibility fix and a refactor are
 reviewed as the same thing once you have publicly announced the refactor. If a
@@ -1040,7 +1077,11 @@ pixel-identical, which is what makes them reviewable.
    unlocks as much for as little.
 2. **Give the dashboard widget header a class** and fix the contextual-row
    contrast (§2b, §2c). Both are small, neither needs the token work, and the
-   second is an accessibility fix that stands on its own. *(The contextual-row
+   second is an accessibility fix that stands on its own.
+   *(The widget-header half was attempted in #20294 and closed unmerged: it
+   added rules to `tw_dark.css`, which is slated for deletion, and the
+   maintainers disagree on the header design itself. Not small after all -
+   see §2b.)* *(The contextual-row
    half is submitted as librenms/librenms#20594 — eight values, accepted as a
    quick fix after three review rounds. §2c records what those rounds
    established.)*
