@@ -130,12 +130,22 @@ built in a JS string, the vendored Leaflet cluster markers, 77 icon buttons
 whose font-family the skin had clobbered, and five contrast failures the skins
 themselves introduced. None were visible to a stylesheet-based check.
 
-Run it on at least `/`, `/devices`, `/alert-rules`, `/eventlog` and a graph
-page. All three skins currently return zero findings on all five.
+Run it on at least `/`, `/devices`, `/alert-rules`, `/eventlog`, `/graphs` and
+a device graph page. All three skins return zero findings on the first four.
+`/graphs` has been verified for Protoss only; Terran and Zerg carry the
+identical fix but have not been re-run there.
 
-`/eventlog` earns its place on that list: it is the only one of the five that
-exercises a select2 placeholder, which is where a 1.2:1 upstream bug had been
-sitting unnoticed through every previous audit round.
+`/eventlog` earns its place on that list: it is the only one that exercises a
+select2 placeholder, which is where a 1.2:1 upstream bug had been sitting
+unnoticed through every previous audit round.
+
+`/graphs` earns its place the same way, and later. It is the only page that
+pairs `tw:dark:bg-white!` with a dark `tw:dark:text-gray-800`
+(`graphs/show.blade.php:53`), so a skin that repaints the background without
+also setting the text lands at 1.19:1 — worse than the white box it replaced.
+That regression shipped in `d266a63`, survived every audit round, and was
+reported by a user rather than caught here, because no page on this list
+exercised it.
 
 **2. `scripts/coverage.sh` — run this second**, as a floor. It answers "did I
 forget a component", not "does it look right".
