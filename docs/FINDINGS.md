@@ -999,6 +999,26 @@ pixel-identical, which is what makes them reviewable.
    half is submitted as librenms/librenms#20594 — eight values, accepted as a
    quick fix after three review rounds. §2c records what those rounds
    established.)*
+2b. **Give `components/date-range-picker.blade.php` a dark background
+   variant** (§2). Its date and time inputs carry bare `tw:bg-white` with no
+   `dark:` companion, so they render as four white 319x29 boxes on a dark
+   panel — on every graph page in the application. The component already
+   gives its *border* a `tw:dark:border-gray-600`, so this is an oversight
+   rather than a decision, and the fix is adding one utility to five
+   elements.
+
+   **Hold this one for the refactor.** It is too small to be worth a PR of
+   its own after the #20594 experience, and it is exactly the kind of thing
+   a markup-colour pass should sweep up. If the Tailwind/token work ever
+   starts — the Blade-component direction in §2c, or items 4–6 below — this
+   belongs in the same change. Raising it standalone risks a fourth round on
+   a one-line fix; raising it as one item in a coherent pass costs nothing.
+
+   The skins work around it (`input.tw\:bg-white` in section 16), so nothing
+   here is blocked on it. Worth noting the workaround has to be scoped to
+   `input`: two of the nine unpaired `tw:bg-white` uses are QR-code quiet
+   zones that must stay white, so the blanket version breaks two-factor
+   enrolment.
 3. **Tokenise the 58 hex literals in the 15 shared `generic_*` graph helpers**
    (§5). This is the best effort-to-impact ratio available: 15 files, one
    afternoon, and 1,233 graph definitions become theme-aware. Start with
