@@ -527,6 +527,31 @@ Five of six pass. Links on the base fill miss AA by 0.08 — a rounding-error
 failure next to the 1.00:1 and 1.15:1 values in the four rows above, and not
 worth widening a PR for. Recorded here so it does not have to be re-derived.
 
+### Re-verified in stock, skin disabled *(2026-09-25)*
+
+After two §2c-adjacent claims turned out to be skin artefacts, every number
+behind #20594 was re-measured on the live instance with the skin's `<link>`
+disabled in-page, swapping `tw_dark.css` for each variant in place (shipped,
+the PR's eight values, and the eight blocks deleted). One real `/alert-rules`
+row was cloned into all four states; `/poller` was measured on its six real
+`tr.success` rows.
+
+| row | text, shipped → PR | link, shipped → PR | blocks deleted |
+|---|---|---|---|
+| success | 2.19 → 10.13 | 1.20 → 5.56 | 1.19 |
+| info | 2.09 → 10.03 | 1.15 → 5.50 | 1.21 |
+| warning | 3.92 → 10.08 | 2.15 → 5.53 | 1.07 |
+| danger | 3.27 → 10.08 | 1.79 → 5.53 | 1.29 |
+
+Stock cell text is `#ffffff` and links `#bfc0c0`, as the PR assumed. The PR
+image's pixels reproduce the same fills and ratios exactly. Hover, computed from
+the hover fills against those inks, bottoms out at 4.60:1 after the change;
+neither page's table is `.table-hover` on this instance, so it is not observed.
+
+One figure is arithmetic rather than observation: `.text-muted` (`#7a8288`)
+goes from 1.00:1 (warning) to about 2.58:1. The numbers are right, but no
+contextual row on either page contains muted text, so no user currently sees it.
+
 ### What upstream will and will not take *(outcome, three review rounds)*
 
 Kept because the reasoning was expensive and none of it is visible in the
