@@ -60,12 +60,15 @@ measurement is only as good as the last time anyone checked it.
 | §2b: the widget header colour "is not in a stylesheet at all" | **retracted** | It is themeable, via the element selector or the theme variable — which §16 of every skin here now does. Flagged by a LibreNMS maintainer; our own later work had already disproved it. |
 | "1,322 graph definitions" | **corrected → 1,233** | The figure summed per-helper reference counts, which double-counts any file using more than one helper. Caught while fact-checking a forum reply. |
 | `tw_dark.css` is "the whole dark theme" | **corrected** | Per a maintainer: legacy Bootstrap overrides kept for the Tailwind theme toggle, carrying a lot of dead CSS. Some of its 272 literals want deleting, not tokenising. |
+| "What would actually help" §4: tokenise the `.lnms-btn-*` component classes | **corrected** | A maintainer rejects the pattern itself, not just its hard-coded hex: "I do not like lnms-btn-danger so no, just swapping one set of class names for another is probably not the winning strategy." Tokenising a pattern upstream wants retired is the wrong investment. |
 
-**The pattern worth naming:** four of these six were true when written and
-falsified later — three of them by work in this same repo. Nothing here
-re-checks a finding once it is written down, so corrections only happen when
-something forces them. If you are reading this document to decide whether to
-act on it, weight the reproduction commands over the prose.
+**The pattern worth naming:** eight entries, and most were wrong the moment
+they were written — miscounts, a variable-name typo, a test that did not do
+what it appeared to. They survived because nothing here re-checks a finding
+once it is written down, so a correction only happens when something forces
+one: five were forced by later work in this same repo, three by outside
+review. If you are reading this document to decide whether to act on it,
+weight the reproduction commands over the prose.
 
 ---
 
@@ -418,6 +421,68 @@ and leaves the text colour alone, so dark body text sits on bright fills. On
 the **alert rules page**, where most rows carry one of these classes, this is
 the worst contrast in the application — and it is that way in the stock dark
 theme, with no custom CSS involved.
+
+There is a fifth state, `tr.active`, used for disabled alert rules and swapped
+in and out at runtime by the toggle script on that page. It is a grey rather
+than a saturated mid-tone, so it was never part of this defect, but it is worth
+recording that it is not clean either:
+
+| Text | `.active` `#49515a` | `.active:hover` `#3e444c` |
+|---|---|---|
+| body `#c8c8c8` | 4.81:1 | 5.88:1 |
+| link `#bfc0c0` | **4.42:1** | 5.39:1 |
+| white `#ffffff` | 8.05:1 | 9.83:1 |
+
+Five of six pass. Links on the base fill miss AA by 0.08 — a rounding-error
+failure next to the 1.00:1 and 1.15:1 values in the four rows above, and not
+worth widening a PR for. Recorded here so it does not have to be re-derived.
+
+### What upstream will and will not take *(outcome, three review rounds)*
+
+Kept because the reasoning was expensive and none of it is visible in the
+merged diff.
+
+The fix went up as eight darkened fills in `tw_dark.css`. Review asked for the
+values to be **removed** rather than modified. Removing them alone regresses
+contrast: `tw_dark.css` sets only backgrounds for tables, never text colour, so
+deleting the overrides drops Bootstrap's pale light-theme tints under the dark
+theme's light text — 1.29:1, against 3.27:1 before. The rules were therefore
+moved to `resources/css/app.css`, which imports Bootstrap into
+`layer(components)`, so an unlayered rule there wins without specificity chains
+(§1).
+
+That was rejected as "moving the garbage around". The objection is not the file
+— it is the **pattern**: Bootstrap's contextual class used as the styling hook.
+The rule as stated is that `tw_dark.css` should only ever lose lines, and that
+replacements must not re-map Bootstrap classes.
+
+The apparent next step was `.lnms-table-danger`, following `.lnms-btn-danger`
+already in `app.css`. Asking before building it was worth roughly thirteen
+files: the maintainer does not like `.lnms-btn-*` either — *"just swapping one
+set of class names for another is probably not the winning strategy"* — and the
+direction offered instead is a Blade component with the Tailwind embedded
+directly, carrying the caveat, volunteered in the same message, that Blade
+components are slow in loops. Every contextual row in the codebase is emitted
+inside a loop, so there is no settled answer for this case yet.
+
+The original eight-value change was then accepted as a quick fix, with the
+reviewer noting it had been held to a higher standard because the forum post
+had signalled a larger theming project behind it.
+
+**The transferable lesson:** a small accessibility fix and a refactor are
+reviewed as the same thing once you have publicly announced the refactor. If a
+fix should stand alone, say so in the PR before the first review, not after the
+third.
+
+**Emission surface, for whoever does attempt this.** Roughly nine sites emit
+contextual row classes, in three groups: two Blade rows on the poller page,
+driven by `PollerController::checkTimeSinceLastPoll()`; five raw-PHP string
+literals (`$error = 'class="danger"'`) in the NTP pages and the two F5
+load-balancer pages; and the alert rules page, where the class comes from
+`alert_layout()` in `includes/html/functions.inc.php` and is then added and
+removed at runtime by inline jQuery in `includes/html/print-alert-rules.php`.
+That last one is invisible to a grep for `class=`, and converting the markup
+without it would leave rows holding a stale class after a toggle.
 
 ### A second instance: the select2 placeholder
 
@@ -841,7 +906,10 @@ pixel-identical, which is what makes them reviewable.
    unlocks as much for as little.
 2. **Give the dashboard widget header a class** and fix the contextual-row
    contrast (§2b, §2c). Both are small, neither needs the token work, and the
-   second is an accessibility fix that stands on its own.
+   second is an accessibility fix that stands on its own. *(The contextual-row
+   half is submitted as librenms/librenms#20594 — eight values, accepted as a
+   quick fix after three review rounds. §2c records what those rounds
+   established.)*
 3. **Tokenise the 58 hex literals in the 15 shared `generic_*` graph helpers**
    (§5). This is the best effort-to-impact ratio available: 15 files, one
    afternoon, and 1,233 graph definitions become theme-aware. Start with
@@ -851,7 +919,10 @@ pixel-identical, which is what makes them reviewable.
    have one colour source rather than three.
 4. **Replace the arbitrary-value literals** (`tw:bg-[#337ab7]` etc.) in
    `app.css` component classes with `@theme` tokens. Small, contained, high
-   symbolic value.
+   symbolic value — but **check first**. A maintainer has since said he does
+   not like the `.lnms-btn-*` pattern these literals live in, so tokenising
+   them may be polishing something upstream intends to retire. See the
+   corrections ledger.
 5. **Drop the remaining `!` modifiers** from `@apply` in component classes, once nothing
    depends on them. This alone would let skins stop using `!important`.
 6. **Triage `tw_dark.css`'s 272 literals, then fold the survivors into the
