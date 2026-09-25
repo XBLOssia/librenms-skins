@@ -131,9 +131,7 @@ whose font-family the skin had clobbered, and five contrast failures the skins
 themselves introduced. None were visible to a stylesheet-based check.
 
 Run it on at least `/`, `/devices`, `/alert-rules`, `/eventlog`, `/graphs` and
-a device graph page. All three skins return zero findings on the first four.
-`/graphs` has been verified for Protoss only; Terran and Zerg carry the
-identical fix but have not been re-run there.
+a device graph page. All three skins return zero findings on all six.
 
 `/eventlog` earns its place on that list: it is the only one that exercises a
 select2 placeholder, which is where a 1.2:1 upstream bug had been sitting
