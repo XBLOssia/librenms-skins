@@ -145,6 +145,18 @@ That regression shipped in `d266a63`, survived every audit round, and was
 reported by a user rather than caught here, because no page on this list
 exercised it.
 
+**Open collapsed things before you trust a clean run.** `audit.js` skips any
+element under 4x4px, so anything inside a `display:none` container measures 0x0
+and is silently not audited. Verifying `/graphs` this way returned zero
+findings three times while four white 319x29 inputs sat in the closed
+date-range picker. Menus, modals, accordions and pickers all need opening
+first. See FINDINGS 2 for that case and its fix.
+
+**Hard reload is not enough after editing a skin.** `webui.custom_css` is
+served without a cache buster, so the browser keeps the old stylesheet —
+Ctrl+Shift+R did not shift it. Append a query string to the `<link>` href
+before measuring, or you will verify the previous version of your own fix.
+
 **2. `scripts/coverage.sh` — run this second**, as a floor. It answers "did I
 forget a component", not "does it look right".
 

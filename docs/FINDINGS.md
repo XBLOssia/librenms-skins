@@ -299,6 +299,95 @@ dark mode, on the date-range field that sits on every graph page
 (`resources/views/graphs/show.blade.php:53`). That is the most visible single
 item in this document, and a one-character fix upstream.
 
+#### The trap: those elements carry a text colour too
+
+`graphs/show.blade.php:53` pairs `tw:dark:bg-white!` with
+`tw:dark:text-gray-800` — a dark ink chosen to sit on the white background it
+ships with. A skin that repaints the background and leaves the text alone
+lands at **1.19:1**, which is *worse* than the white box it replaced.
+
+That is not hypothetical. It shipped here in `d266a63`, which moved section 16
+of each skin onto theme variables and kept the background rule while dropping
+the colour. It survived every audit round and was reported by a user, because
+no page on the standing audit list exercised it. `/graphs` is now on that list
+(see ROADMAP), and the skins carry a comment saying the two declarations must
+not be separated.
+
+Verified on a live 26.9.1 instance, 2026-09-25, all three skins against a
+`port_bits` graph page — nine elements carry a forced-white utility on that
+page:
+
+| Skin | Repainted to | Body text | "48 Hours" range control |
+|---|---|---|---|
+| Terran | `--tn-plate` `#1c2226` | 10.09:1 | 6.18:1 |
+| Zerg | `--zg-flesh` `#1d1019` | 10.98:1 | 7.08:1 |
+| Protoss | `--pr-panel` `#0f1a2e` | 11.68:1 | 6.68:1 |
+
+Full audit on that page returns zero findings for all three: no light
+surfaces, no bright chips, no text below AA, across 1,915 elements.
+
+**Measurement note.** Suppress transitions before reading computed styles:
+
+```js
+const k = document.createElement('style');
+k.textContent = '*,*::before,*::after{transition:none!important;animation:none!important}';
+document.head.appendChild(k);
+void document.body.offsetHeight;
+```
+
+Without it `getComputedStyle` returns mid-transition values serialised as
+`oklab(...)`, which reads as a different colour entirely. That artefact nearly
+produced a false finding earlier in this project.
+
+#### The same bug without the `!`, and an audit blind spot
+
+Verifying the above turned up a second instance the audit could not see.
+`components/date-range-picker.blade.php` gives its date and time inputs
+`tw:bg-white` — **no `!`, and no `dark:` companion** — so core never darkens
+them and the skins' `!`-matching rules never caught them. Four white 319x29
+inputs on a dark panel, in all three skins.
+
+`audit.js` missed it because the picker panel is `display:none` until opened,
+so the inputs measure 0x0 and fall under the `width < 4 || height < 4` skip.
+Forced open they are far over the 6,000 px² surface threshold and flag
+immediately. **Collapsed containers are invisible to the audit** — menus,
+modals, accordions and pickers all need opening before the page counts as
+covered.
+
+The fix has to be narrow. Core has 63 bare `tw:bg-white` uses:
+
+| | count | verdict |
+|---|---|---|
+| paired with `tw:dark:bg-*` on the same element | 54 | core handles it; leave alone |
+| date-range picker inputs | 5 | the bug |
+| QR-code quiet zones (`auth/2fa`, `user/preferences`) | 2 | **must stay white** or the codes stop scanning |
+| an 8x8 status dot, a `pointer-events-none` tooltip | 2 | intentional |
+
+So a blanket `html.dark .tw\:bg-white` override would break two-factor
+enrolment. The discriminator that works is the element type — all five broken
+ones are `<input>`, none of the others are:
+
+```css
+html.dark input.tw\:bg-white {
+  background-color: var(--pr-panel) !important;
+  color: var(--pr-text) !important;
+}
+```
+
+Verified with the picker forced open, all three skins: inputs repaint to
+`#0f1a2e` / `#1c2226` / `#1d1019` at 11.68:1, 10.09:1 and 10.98:1, and the full
+audit returns zero findings in that state.
+
+Also an upstream bug: that component gives its border a `tw:dark:border-gray-600`
+variant but never gives the background one.
+
+**Deployment note.** LibreNMS serves `webui.custom_css` files without a cache
+buster, so a browser holds the old stylesheet across skin edits. A reload is
+not enough and neither was Ctrl+Shift+R here; the check that works is
+re-pointing the `<link>` at the same URL with a query string appended. This
+cost a false negative during verification — the fix was live on disk and
+correct, and the page kept rendering the old rules.
+
 For scale, these are the colour surfaces a theme has to reach *at all*, `!` or
 not:
 

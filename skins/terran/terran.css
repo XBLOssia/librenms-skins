@@ -1603,6 +1603,23 @@ html.dark {
     background-color: var(--tn-plate) !important;
     color: var(--tn-text) !important;
   }
+  /* Bare `tw:bg-white` - no `!`, no `dark:` variant - on the date-range
+   * picker's date/time inputs (components/date-range-picker.blade.php:20,
+   * 54, 55, 61, 62). Core gives that component's border a dark variant but
+   * not its background, so the inputs stay white in dark mode.
+   *
+   * Scoped to `input` deliberately. Core has 63 bare `tw:bg-white` uses; 54
+   * pair with a `tw:dark:bg-*` on the same element and must be left alone,
+   * and of the 9 that do not, two are QR-code quiet zones (auth/2fa,
+   * user/preferences) that MUST stay white or the codes stop scanning. All
+   * five broken ones are <input>; none of the others are.
+   *
+   * audit.js cannot see these: the panel is display:none until opened, so
+   * the inputs measure 0x0 and are skipped. Opened, they are 319x29. */
+  html.dark input.tw\:bg-white {
+    background-color: var(--tn-plate) !important;
+    color: var(--tn-text) !important;
+  }
   html.dark .tw\:hover\:bg-gray-200\!:hover,
   html.dark .tw\:dark\:hover\:bg-gray-200\!:hover {
     background-color: var(--tn-plate-hi) !important;
